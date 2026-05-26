@@ -1,17 +1,6 @@
-import { IsBoolean, IsNumber, IsOptional, Min } from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateFreelanceProfileDto } from './create-freelance-profile.dto';
 
-export class UpdateFreelanceProfileDto {
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tarifJournalier?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  disponible?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  rating?: number;
-}
+export class UpdateFreelanceProfileDto extends PartialType(
+  OmitType(CreateFreelanceProfileDto, ['userId'] as const),
+) {}

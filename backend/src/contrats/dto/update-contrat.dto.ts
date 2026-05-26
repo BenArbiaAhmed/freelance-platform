@@ -1,27 +1,11 @@
-import {
-  IsBoolean,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  Min,
-} from 'class-validator';
-import { ContratStatut } from '../entities/contrat.entity';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateContratDto } from './create-contrat.dto';
 
-export class UpdateContratDto {
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  montant?: number;
-
-  @IsOptional()
-  @IsEnum(ContratStatut)
-  statut?: ContratStatut;
-
-  @IsOptional()
-  @IsBoolean()
-  signéParClient?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  signéParFreelance?: boolean;
-}
+export class UpdateContratDto extends PartialType(
+  OmitType(CreateContratDto, [
+    'missionId',
+    'clientId',
+    'freelanceId',
+    'candidatureId',
+  ] as const),
+) {}

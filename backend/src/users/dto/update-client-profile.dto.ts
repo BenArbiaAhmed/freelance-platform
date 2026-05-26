@@ -1,11 +1,6 @@
-import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateClientProfileDto } from './create-client-profile.dto';
 
-export class UpdateClientProfileDto {
-  @IsOptional()
-  @IsString()
-  entreprise?: string;
-
-  @IsOptional()
-  @IsUrl()
-  siteWeb?: string;
-}
+export class UpdateClientProfileDto extends PartialType(
+  OmitType(CreateClientProfileDto, ['userId'] as const),
+) {}

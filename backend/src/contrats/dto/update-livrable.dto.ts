@@ -1,16 +1,6 @@
-import { IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
-import { LivrableStatut } from '../entities/livrable.entity';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateLivrableDto } from './create-livrable.dto';
 
-export class UpdateLivrableDto {
-  @IsOptional()
-  @IsString()
-  titre?: string;
-
-  @IsOptional()
-  @IsUrl()
-  url?: string;
-
-  @IsOptional()
-  @IsEnum(LivrableStatut)
-  statut?: LivrableStatut;
-}
+export class UpdateLivrableDto extends PartialType(
+  OmitType(CreateLivrableDto, ['contratId'] as const),
+) {}

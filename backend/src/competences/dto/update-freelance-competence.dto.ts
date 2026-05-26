@@ -1,8 +1,6 @@
-import { IsEnum, IsOptional } from 'class-validator';
-import { NiveauCompetence } from '../entities/freelance-competence.entity';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateFreelanceCompetenceDto } from './create-freelance-competence.dto';
 
-export class UpdateFreelanceCompetenceDto {
-  @IsOptional()
-  @IsEnum(NiveauCompetence)
-  niveau?: NiveauCompetence;
-}
+export class UpdateFreelanceCompetenceDto extends PartialType(
+  OmitType(CreateFreelanceCompetenceDto, ['freelanceId', 'competenceId'] as const),
+) {}

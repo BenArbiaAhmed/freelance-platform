@@ -1,25 +1,6 @@
-import {
-  IsBoolean,
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateWebhookLogDto } from './create-webhook-log.dto';
 
-export class UpdateWebhookLogDto {
-  @IsOptional()
-  @IsString()
-  event?: string;
-
-  @IsOptional()
-  @IsObject()
-  payload?: Record<string, unknown>;
-
-  @IsOptional()
-  @IsInt()
-  statusCode?: number;
-
-  @IsOptional()
-  @IsBoolean()
-  succes?: boolean;
-}
+export class UpdateWebhookLogDto extends PartialType(
+  OmitType(CreateWebhookLogDto, ['webhookId'] as const),
+) {}

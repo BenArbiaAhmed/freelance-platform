@@ -1,17 +1,6 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { CandidatureStatut } from '../entities/candidature.entity';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateCandidatureDto } from './create-candidature.dto';
 
-export class UpdateCandidatureDto {
-  @IsOptional()
-  @IsString()
-  lettre?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tarifPropose?: number;
-
-  @IsOptional()
-  @IsEnum(CandidatureStatut)
-  statut?: CandidatureStatut;
-}
+export class UpdateCandidatureDto extends PartialType(
+  OmitType(CreateCandidatureDto, ['missionId', 'freelanceId'] as const),
+) {}

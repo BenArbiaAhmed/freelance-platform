@@ -1,17 +1,6 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { PaiementStatut } from '../entities/paiement.entity';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreatePaiementDto } from './create-paiement.dto';
 
-export class UpdatePaiementDto {
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  montant?: number;
-
-  @IsOptional()
-  @IsEnum(PaiementStatut)
-  statut?: PaiementStatut;
-
-  @IsOptional()
-  @IsString()
-  stripePaymentId?: string;
-}
+export class UpdatePaiementDto extends PartialType(
+  OmitType(CreatePaiementDto, ['contratId'] as const),
+) {}

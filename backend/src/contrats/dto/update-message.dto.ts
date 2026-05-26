@@ -1,11 +1,6 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { CreateMessageDto } from './create-message.dto';
 
-export class UpdateMessageDto {
-  @IsOptional()
-  @IsString()
-  contenu?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  lu?: boolean;
-}
+export class UpdateMessageDto extends PartialType(
+  OmitType(CreateMessageDto, ['contratId', 'expediteurId'] as const),
+) {}

@@ -5,6 +5,7 @@ import {
   OneToOne,
   JoinColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { FreelanceCompetence } from '../../competences/entities/freelance-competence.entity';
@@ -22,12 +23,15 @@ export class FreelanceProfile {
   @Column('uuid')
   userId: string;
 
+  @Index()
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   tarifJournalier: number;
 
+  @Index()
   @Column({ default: true })
   disponible: boolean;
 
+  @Index()
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
 

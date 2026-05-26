@@ -1,0 +1,156 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type ClientProfileSummary {
+  entreprise: String
+  id: ID!
+  siteWeb: String
+  user: UserSummary
+  userId: ID!
+}
+
+type CompetenceSummary {
+  categorie: String
+  id: ID!
+  nom: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type FreelanceCompetenceSummary {
+  competence: CompetenceSummary!
+  id: ID!
+  niveau: NiveauCompetence!
+}
+
+input FreelanceProfileFilterInput {
+  competenceIds: [ID!]
+  competenceNames: [String!]
+  disponible: Boolean
+  keyword: String
+  niveaux: [NiveauCompetence!]
+  ratingMin: Float
+  tarifJournalierMax: Float
+  tarifJournalierMin: Float
+}
+
+type FreelanceProfileSearchItem {
+  competences: [FreelanceCompetenceSummary!]!
+  disponible: Boolean!
+  id: ID!
+  rating: Float!
+  tarifJournalier: Float
+  user: UserSummary!
+  userId: ID!
+}
+
+enum FreelanceProfileSortField {
+  NOM
+  RATING
+  TARIF_JOURNALIER
+}
+
+input FreelanceProfileSortInput {
+  direction: SortDirection! = DESC
+  field: FreelanceProfileSortField! = RATING
+}
+
+input MissionFilterInput {
+  budgetMax: Float
+  budgetMin: Float
+  clientId: ID
+  competences: [String!]
+  deadlineFrom: DateTime
+  deadlineTo: DateTime
+  keyword: String
+  statuts: [MissionStatut!]
+}
+
+type MissionSearchItem {
+  budget: Float!
+  client: ClientProfileSummary
+  clientId: ID!
+  competencesRequises: [String]
+  dateCreation: DateTime!
+  deadline: DateTime
+  description: String!
+  id: ID!
+  statut: MissionStatut!
+  titre: String!
+}
+
+enum MissionSortField {
+  BUDGET
+  DATE_CREATION
+  DEADLINE
+  TITRE
+}
+
+input MissionSortInput {
+  direction: SortDirection! = DESC
+  field: MissionSortField! = DATE_CREATION
+}
+
+enum MissionStatut {
+  ACTIVE
+  CLOSED
+  DRAFT
+}
+
+enum NiveauCompetence {
+  AVANCE
+  DEBUTANT
+  EXPERT
+  INTERMEDIAIRE
+}
+
+type PaginatedFreelanceProfileResult {
+  hasNextPage: Boolean!
+  items: [FreelanceProfileSearchItem!]!
+  limit: Int!
+  page: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+type PaginatedMissionResult {
+  hasNextPage: Boolean!
+  items: [MissionSearchItem!]!
+  limit: Int!
+  page: Int!
+  totalCount: Int!
+  totalPages: Int!
+}
+
+input PaginationInput {
+  limit: Int! = 10
+  page: Int! = 1
+}
+
+type Query {
+  searchFreelanceProfiles(filter: FreelanceProfileFilterInput, pagination: PaginationInput, sort: FreelanceProfileSortInput): PaginatedFreelanceProfileResult!
+  searchMissions(filter: MissionFilterInput, pagination: PaginationInput, sort: MissionSortInput): PaginatedMissionResult!
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT
+  FREELANCE
+}
+
+type UserSummary {
+  bio: String
+  id: ID!
+  nom: String!
+  photo: String
+  role: UserRole!
+}

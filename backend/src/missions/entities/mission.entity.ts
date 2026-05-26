@@ -6,6 +6,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ClientProfile } from '../../users/entities/client-profile.entity';
 import { Candidature } from '../../candidatures/entities/candidature.entity';
@@ -34,12 +35,15 @@ export class Mission {
   @Column({ type: 'text' })
   description: string;
 
+  @Index()
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   budget: number;
 
+  @Index()
   @Column({ nullable: true })
   deadline: Date;
 
+  @Index()
   @Column({ type: 'enum', enum: MissionStatut, default: MissionStatut.ACTIVE })
   statut: MissionStatut;
 

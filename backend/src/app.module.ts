@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
@@ -23,10 +26,18 @@ import { CandidaturesModule } from './candidatures/candidatures.module';
 import { ContratsModule } from './contrats/contrats.module';
 import { PaiementsModule } from './paiements/paiements.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      path: '/graphql',
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      sortSchema: true,
+      graphiql: true,
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -62,6 +73,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     ContratsModule,
     PaiementsModule,
     WebhooksModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -16,6 +16,13 @@ import { Message } from './contrats/entities/message.entity';
 import { Paiement } from './paiements/entities/paiement.entity';
 import { Webhook } from './webhooks/entities/webhook.entity';
 import { WebhookLog } from './webhooks/entities/webhook-log.entity';
+import { UsersModule } from './users/users.module';
+import { CompetencesModule } from './competences/competences.module';
+import { MissionsModule } from './missions/missions.module';
+import { CandidaturesModule } from './candidatures/candidatures.module';
+import { ContratsModule } from './contrats/contrats.module';
+import { PaiementsModule } from './paiements/paiements.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -48,6 +55,13 @@ import { WebhookLog } from './webhooks/entities/webhook-log.entity';
         synchronize: config.get('NODE_ENV') !== 'production',
       }),
     }),
+    UsersModule,
+    CompetencesModule,
+    MissionsModule,
+    CandidaturesModule,
+    ContratsModule,
+    PaiementsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

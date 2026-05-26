@@ -8,7 +8,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import { CandidaturesService } from './candidatures.service';
 import { CreateCandidatureDto } from './dto/create-candidature.dto';
 import { UpdateCandidatureDto } from './dto/update-candidature.dto';
@@ -38,6 +41,11 @@ export class CandidaturesController {
     @Body() dto: UpdateCandidatureDto,
   ) {
     return this.service.update(id, dto);
+  }
+
+  @Sse('status/stream')
+  statusStream(): Observable<MessageEvent> {
+    return this.service.observeStatusChanges();
   }
 
   @Delete(':id')

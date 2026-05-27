@@ -27,6 +27,7 @@ import { ContratsModule } from './contrats/contrats.module';
 import { PaiementsModule } from './paiements/paiements.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { SearchModule } from './search/search.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { SearchModule } from './search/search.module';
     PaiementsModule,
     WebhooksModule,
     SearchModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

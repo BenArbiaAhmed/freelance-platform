@@ -6,9 +6,12 @@ import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
+/** A User with its password hash and entity hooks stripped, safe to return. */
+export type SafeUser = Omit<User, 'motDePasse' | 'hashPassword'>;
+
 export interface AuthResult {
   accessToken: string;
-  user: Omit<User, 'motDePasse' | 'hashPassword'>;
+  user: SafeUser;
 }
 
 @Injectable()
@@ -22,7 +25,7 @@ export class AuthService {
   async validateUser(
     email: string,
     motDePasse: string,
-  ): Promise<User | null> {
+  ): Promise<SafeUser | null> {
     const user = await this.usersService.findByEmailWithPassword(email);
     if (!user) {
       return null;
@@ -42,15 +45,15 @@ export class AuthService {
     // UsersService.create persists the user; the entity's @BeforeInsert hook
     // hashes motDePasse, so we never store the plaintext.
     const user = await this.usersService.create(dto);
-    return this.buildAuthResult(user);
+    return this.buildAuthResult(this.stripPassword(user));
   }
 
   /** Issues a token for an already-validated user (passed by the local strategy). */
-  login(user: User): AuthResult {
+  login(user: SafeUser): AuthResult {
     return this.buildAuthResult(user);
   }
 
-  private buildAuthResult(user: User): AuthResult {
+  private buildAuthResult(user: SafeUser): AuthResult {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -58,13 +61,13 @@ export class AuthService {
     };
     return {
       accessToken: this.jwtService.sign(payload),
-      user: this.stripPassword(user),
+      user,
     };
   }
 
-  private stripPassword(user: User): Omit<User, 'motDePasse' | 'hashPassword'> {
-    const { motDePasse: _motDePasse, hashPassword: _hashPassword, ...rest } =
-      user;
-    return rest;
+  private stripPassword(user: User): SafeUser {
+    const safe = { ...user } as Partial<User>;
+    delete safe.motDePasse;
+    return safe as SafeUser;
   }
 }

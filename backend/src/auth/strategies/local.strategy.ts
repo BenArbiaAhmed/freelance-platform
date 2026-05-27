@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 import { AuthService } from '../auth.service';
-import { User } from '../../users/entities/user.entity';
+import type { SafeUser } from '../auth.service';
 
 /**
  * Validates email + password at login. `usernameField` maps passport's default
@@ -14,7 +14,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     super({ usernameField: 'email', passwordField: 'motDePasse' });
   }
 
-  async validate(email: string, motDePasse: string): Promise<User> {
+  async validate(email: string, motDePasse: string): Promise<SafeUser> {
     const user = await this.authService.validateUser(email, motDePasse);
     if (!user) {
       throw new UnauthorizedException('Identifiants invalides');

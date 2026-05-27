@@ -9,14 +9,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import type { SafeUser } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AuthenticatedUser } from './interfaces/jwt-payload.interface';
-import { User } from '../users/entities/user.entity';
+import type { AuthenticatedUser } from './interfaces/jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -35,7 +35,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   // LocalAuthGuard runs the local strategy and attaches the validated user.
   // The body is validated/documented by LoginDto.
-  login(@Body() _dto: LoginDto, @Request() req: { user: User }) {
+  login(@Body() _dto: LoginDto, @Request() req: { user: SafeUser }) {
     return this.authService.login(req.user);
   }
 

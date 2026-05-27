@@ -7,6 +7,7 @@ import { FreelancersTab } from '@/components/dashboard/FreelancersTab'
 import { ApplicationsTab } from '@/components/dashboard/ApplicationsTab'
 import { ContractsTab } from '@/components/dashboard/ContractsTab'
 import { ProfileTab } from '@/components/dashboard/ProfileTab'
+import { ChatPopup } from '@/components/dashboard/ChatPopup'
 
 const mockUser = {
   nom: 'Aisha Kamara',
@@ -63,6 +64,7 @@ export default function DashboardPage() {
             <MissionsTab
               selectedId={selectedMissionId}
               onSelect={setSelectedMissionId}
+              role={role}
             />
           )}
           {tab === 'freelancers' && (
@@ -76,6 +78,8 @@ export default function DashboardPage() {
           {tab === 'profile' && <ProfileTab role={role} />}
         </main>
       </div>
+
+      <ChatPopup />
     </div>
   )
 }

@@ -1,6 +1,9 @@
-import { Bell, Search } from 'lucide-react'
+import { Search, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { NotificationsPopup } from '@/components/dashboard/NotificationsPopup'
+import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
 
 const tabTitles: Record<string, string> = {
   overview: 'Overview',
@@ -29,6 +32,16 @@ export function DashboardHeader({ tab, role, onRoleToggle }: Props) {
           <Input className="pl-9 h-8 text-sm" placeholder="Search…" />
         </div>
 
+        {/* Post mission — clients only */}
+        {role === 'client' && (
+          <CreateMissionModal>
+            <Button size="sm" className="gap-1.5 shadow-sm shadow-primary/20">
+              <Plus className="w-3.5 h-3.5" />
+              Post mission
+            </Button>
+          </CreateMissionModal>
+        )}
+
         {/* Role toggle — demo only */}
         <button
           onClick={onRoleToggle}
@@ -42,10 +55,7 @@ export function DashboardHeader({ tab, role, onRoleToggle }: Props) {
         </button>
 
         {/* Notifications */}
-        <button className="relative text-muted-foreground hover:text-foreground transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary" />
-        </button>
+        <NotificationsPopup />
       </div>
     </header>
   )

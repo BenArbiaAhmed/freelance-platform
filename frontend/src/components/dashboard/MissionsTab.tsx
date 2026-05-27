@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Calendar, Users, ArrowRight, Search } from 'lucide-react'
+import { Calendar, Users, ArrowRight, Search, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { MissionDetail } from '@/components/dashboard/MissionDetail'
+import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
 import { MISSIONS, type Mission } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
@@ -13,9 +14,10 @@ const ALL_SKILLS = Array.from(new Set(MISSIONS.flatMap((m) => m.competencesRequi
 interface Props {
   selectedId: string | null
   onSelect: (id: string | null) => void
+  role: 'freelance' | 'client'
 }
 
-export function MissionsTab({ selectedId, onSelect }: Props) {
+export function MissionsTab({ selectedId, onSelect, role }: Props) {
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
 
@@ -73,6 +75,22 @@ export function MissionsTab({ selectedId, onSelect }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Client CTA banner */}
+      {role === 'client' && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-5 py-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Need to hire someone?</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Post a mission and receive applications from top freelancers.</p>
+          </div>
+          <CreateMissionModal>
+            <Button size="sm" className="gap-1.5 shrink-0 shadow-sm shadow-primary/20">
+              <Plus className="w-3.5 h-3.5" />
+              Post mission
+            </Button>
+          </CreateMissionModal>
+        </div>
+      )}
 
       <p className="text-sm text-muted-foreground">{filtered.length} mission{filtered.length !== 1 ? 's' : ''} found</p>
 

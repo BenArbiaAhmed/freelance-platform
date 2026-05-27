@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Menu, X, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -16,12 +17,12 @@ export function Navbar() {
     <header className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2 font-bold text-lg text-foreground">
+        <Link to="/" className="flex items-center gap-2 font-bold text-lg text-foreground">
           <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white">
             <Zap className="w-4 h-4" />
           </span>
           FreelanceHub
-        </a>
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8">
@@ -38,8 +39,8 @@ export function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm">Log in</Button>
-          <Button size="sm">Get started</Button>
+          <Button variant="ghost" size="sm" asChild><Link to="/login">Log in</Link></Button>
+          <Button size="sm" asChild><Link to="/signup">Get started</Link></Button>
         </div>
 
         {/* Mobile menu toggle */}
@@ -66,8 +67,8 @@ export function Navbar() {
             </a>
           ))}
           <div className="flex flex-col gap-2 pt-2 border-t border-border">
-            <Button variant="outline">Log in</Button>
-            <Button>Get started</Button>
+            <Button variant="outline" asChild><Link to="/login">Log in</Link></Button>
+            <Button asChild><Link to="/signup">Get started</Link></Button>
           </div>
         </div>
       )}

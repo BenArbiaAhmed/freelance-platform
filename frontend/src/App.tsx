@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Navbar } from '@/components/Navbar'
 import { Hero } from '@/components/Hero'
 import { LogoBar } from '@/components/LogoBar'
@@ -7,8 +8,10 @@ import { Testimonials } from '@/components/Testimonials'
 import { Pricing } from '@/components/Pricing'
 import { CTA } from '@/components/CTA'
 import { Footer } from '@/components/Footer'
+import LoginPage from '@/pages/LoginPage'
+import SignupPage from '@/pages/SignupPage'
 
-export default function App() {
+function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
@@ -23,5 +26,17 @@ export default function App() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }

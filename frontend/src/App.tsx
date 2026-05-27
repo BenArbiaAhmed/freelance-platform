@@ -10,6 +10,7 @@ import { CTA } from '@/components/CTA'
 import { Footer } from '@/components/Footer'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
+import DashboardPage from '@/pages/DashboardPage'
 
 function LandingPage() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
     </BrowserRouter>
   )

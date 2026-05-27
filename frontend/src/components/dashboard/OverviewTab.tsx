@@ -1,6 +1,7 @@
 import { Briefcase, BookOpen, FileText, DollarSign, TrendingUp, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { MISSIONS, MY_CANDIDATURES, MY_CONTRATS } from '@/lib/mock-data'
+import type { DashTab } from '@/components/dashboard/Sidebar'
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
@@ -11,21 +12,25 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
-interface Props { role: 'freelance' | 'client' }
+interface Props {
+  role: 'freelance' | 'client'
+  onNavigate: (tab: DashTab) => void
+  onSelectMission: (id: string) => void
+}
 
-export function OverviewTab({ role }: Props) {
+export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
   const stats = role === 'freelance'
     ? [
-        { label: 'Open Missions', value: MISSIONS.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '+4 this week' },
-        { label: 'My Applications', value: MY_CANDIDATURES.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${MY_CANDIDATURES.filter(c => c.statut === 'pending').length} pending` },
-        { label: 'Active Contracts', value: MY_CONTRATS.filter(c => c.statut === 'signed').length, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress' },
-        { label: 'Total Earned', value: '$4,350', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$1,750 this month' },
+        { label: 'Open Missions', value: MISSIONS.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '+4 this week', tab: 'missions' as DashTab },
+        { label: 'My Applications', value: MY_CANDIDATURES.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${MY_CANDIDATURES.filter(c => c.statut === 'pending').length} pending`, tab: 'applications' as DashTab },
+        { label: 'Active Contracts', value: MY_CONTRATS.filter(c => c.statut === 'signed').length, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
+        { label: 'Total Earned', value: '$4,350', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$1,750 this month', tab: null },
       ]
     : [
-        { label: 'My Missions', value: 3, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '2 active' },
-        { label: 'Candidatures Received', value: 38, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: '12 unreviewed' },
-        { label: 'Active Contracts', value: 2, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress' },
-        { label: 'Total Spent', value: '$9,100', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$3,200 this month' },
+        { label: 'My Missions', value: 3, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '2 active', tab: 'missions' as DashTab },
+        { label: 'Candidatures Received', value: 38, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: '12 unreviewed', tab: 'applications' as DashTab },
+        { label: 'Active Contracts', value: 2, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
+        { label: 'Total Spent', value: '$9,100', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$3,200 this month', tab: null },
       ]
 
   return (
@@ -35,7 +40,11 @@ export function OverviewTab({ role }: Props) {
         {stats.map((s) => {
           const Icon = s.icon
           return (
-            <Card key={s.label}>
+            <Card
+              key={s.label}
+              className={s.tab ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200' : ''}
+              onClick={s.tab ? () => onNavigate(s.tab!) : undefined}
+            >
               <CardContent className="p-5 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">{s.label}</p>
@@ -59,11 +68,20 @@ export function OverviewTab({ role }: Props) {
           <CardContent className="p-0">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-sm font-semibold text-foreground">Recent Missions</h2>
-              <span className="text-xs text-primary cursor-pointer hover:underline">View all</span>
+              <button
+                onClick={() => onNavigate('missions')}
+                className="text-xs text-primary hover:underline"
+              >
+                View all
+              </button>
             </div>
             <ul className="divide-y divide-border">
               {MISSIONS.slice(0, 4).map((m) => (
-                <li key={m.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
+                <li
+                  key={m.id}
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors cursor-pointer"
+                  onClick={() => onSelectMission(m.id)}
+                >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
                     <Briefcase className="w-4 h-4" />
                   </div>
@@ -87,7 +105,12 @@ export function OverviewTab({ role }: Props) {
               <h2 className="text-sm font-semibold text-foreground">
                 {role === 'freelance' ? 'My Applications' : 'Recent Candidatures'}
               </h2>
-              <span className="text-xs text-primary cursor-pointer hover:underline">View all</span>
+              <button
+                onClick={() => onNavigate('applications')}
+                className="text-xs text-primary hover:underline"
+              >
+                View all
+              </button>
             </div>
             <ul className="divide-y divide-border">
               {MY_CANDIDATURES.map((c) => (

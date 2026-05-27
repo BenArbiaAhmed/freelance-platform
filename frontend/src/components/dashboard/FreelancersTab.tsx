@@ -4,15 +4,25 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { FreelancerDetail } from '@/components/dashboard/FreelancerDetail'
 import { FREELANCERS, type FreelanceProfile } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
 const ALL_SKILLS = Array.from(new Set(FREELANCERS.flatMap((f) => f.competences.map((c) => c.nom))))
 
-export function FreelancersTab() {
+interface Props {
+  selectedId: string | null
+  onSelect: (id: string | null) => void
+}
+
+export function FreelancersTab({ selectedId, onSelect }: Props) {
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
   const [availableOnly, setAvailableOnly] = useState(false)
+
+  if (selectedId) {
+    return <FreelancerDetail freelancerId={selectedId} onBack={() => onSelect(null)} />
+  }
 
   const filtered = FREELANCERS.filter((f) => {
     const matchesSearch =
@@ -69,7 +79,9 @@ export function FreelancersTab() {
       <p className="text-sm text-muted-foreground">{filtered.length} freelancer{filtered.length !== 1 ? 's' : ''} found</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((f) => <FreelancerCard key={f.id} freelancer={f} />)}
+        {filtered.map((f) => (
+          <FreelancerCard key={f.id} freelancer={f} onSelect={onSelect} />
+        ))}
       </div>
 
       {filtered.length === 0 && (
@@ -81,9 +93,12 @@ export function FreelancersTab() {
   )
 }
 
-function FreelancerCard({ freelancer: f }: { freelancer: FreelanceProfile }) {
+function FreelancerCard({ freelancer: f, onSelect }: { freelancer: FreelanceProfile; onSelect: (id: string) => void }) {
   return (
-    <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+    <Card
+      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+      onClick={() => onSelect(f.id)}
+    >
       <CardContent className="p-5 flex flex-col gap-4">
         {/* Avatar + name */}
         <div className="flex items-start gap-3">
@@ -103,7 +118,10 @@ function FreelancerCard({ freelancer: f }: { freelancer: FreelanceProfile }) {
               </span>
             </div>
           </div>
-          <p className="text-sm font-bold text-foreground shrink-0">${f.tarifJournalier}<span className="text-xs font-normal text-muted-foreground">/day</span></p>
+          <p className="text-sm font-bold text-foreground shrink-0">
+            ${f.tarifJournalier}
+            <span className="text-xs font-normal text-muted-foreground">/day</span>
+          </p>
         </div>
 
         {/* Bio */}
@@ -117,7 +135,12 @@ function FreelancerCard({ freelancer: f }: { freelancer: FreelanceProfile }) {
         </div>
 
         {/* CTA */}
-        <Button variant="outline" size="sm" className="w-full mt-auto">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full mt-auto"
+          onClick={(e) => { e.stopPropagation(); onSelect(f.id) }}
+        >
           View profile
         </Button>
       </CardContent>

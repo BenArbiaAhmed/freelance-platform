@@ -4,14 +4,24 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { MissionDetail } from '@/components/dashboard/MissionDetail'
 import { MISSIONS, type Mission } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
 const ALL_SKILLS = Array.from(new Set(MISSIONS.flatMap((m) => m.competencesRequises)))
 
-export function MissionsTab() {
+interface Props {
+  selectedId: string | null
+  onSelect: (id: string | null) => void
+}
+
+export function MissionsTab({ selectedId, onSelect }: Props) {
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
+
+  if (selectedId) {
+    return <MissionDetail missionId={selectedId} onBack={() => onSelect(null)} />
+  }
 
   const filtered = MISSIONS.filter((m) => {
     const matchesSearch =
@@ -64,12 +74,12 @@ export function MissionsTab() {
         </div>
       </div>
 
-      {/* Results count */}
       <p className="text-sm text-muted-foreground">{filtered.length} mission{filtered.length !== 1 ? 's' : ''} found</p>
 
-      {/* Mission cards */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {filtered.map((m) => <MissionCard key={m.id} mission={m} />)}
+        {filtered.map((m) => (
+          <MissionCard key={m.id} mission={m} onSelect={onSelect} />
+        ))}
       </div>
 
       {filtered.length === 0 && (
@@ -81,13 +91,16 @@ export function MissionsTab() {
   )
 }
 
-function MissionCard({ mission: m }: { mission: Mission }) {
+function MissionCard({ mission: m, onSelect }: { mission: Mission; onSelect: (id: string) => void }) {
   const daysLeft = Math.ceil(
     (new Date(m.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
 
   return (
-    <Card className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+    <Card
+      className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+      onClick={() => onSelect(m.id)}
+    >
       <CardContent className="p-5 flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
@@ -116,7 +129,7 @@ function MissionCard({ mission: m }: { mission: Mission }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1 border-t border-border">
+        <div className="flex items-center justify-between pt-1 border-t border-border" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground text-base">${m.budget.toLocaleString()}</span>
             <span className="flex items-center gap-1">
@@ -128,8 +141,8 @@ function MissionCard({ mission: m }: { mission: Mission }) {
               {m.candidatureCount}
             </span>
           </div>
-          <Button size="sm" className="gap-1.5">
-            Apply <ArrowRight className="w-3.5 h-3.5" />
+          <Button size="sm" className="gap-1.5" onClick={() => onSelect(m.id)}>
+            View <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </CardContent>

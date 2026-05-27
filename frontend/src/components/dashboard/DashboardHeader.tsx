@@ -8,6 +8,7 @@ const tabTitles: Record<string, string> = {
   freelancers: 'Browse Freelancers',
   applications: 'My Applications',
   contracts: 'My Contracts',
+  profile: 'My Profile',
 }
 
 interface Props {

@@ -1,8 +1,8 @@
-import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
-export type DashTab = 'overview' | 'missions' | 'freelancers' | 'applications' | 'contracts'
+export type DashTab = 'overview' | 'missions' | 'freelancers' | 'applications' | 'contracts' | 'profile'
 
 interface NavItem {
   id: DashTab
@@ -63,24 +63,43 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
         ))}
       </nav>
 
-      {/* User area */}
-      <div className={cn('border-t border-border p-3 flex items-center gap-3', collapsed && 'justify-center')}>
-        <img
-          src={user.photo ?? `https://i.pravatar.cc/32?u=${user.nom}`}
-          alt={user.nom}
-          className="w-8 h-8 rounded-full object-cover shrink-0"
-        />
-        {!collapsed && (
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{user.nom}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
-          </div>
-        )}
-        {!collapsed && (
-          <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors" title="Log out">
-            <LogOut className="w-4 h-4" />
-          </Link>
-        )}
+      {/* Bottom section: Profile + Logout */}
+      <div className="border-t border-border px-2 py-3 flex flex-col gap-1">
+        {/* Profile nav item */}
+        <button
+          onClick={() => onNavigate('profile')}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full text-left',
+            active === 'profile'
+              ? 'bg-primary/10 text-primary'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+            collapsed && 'justify-center px-0'
+          )}
+          title={collapsed ? 'Profile' : undefined}
+        >
+          <UserCircle className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>Profile</span>}
+        </button>
+
+        {/* User row */}
+        <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-0')}>
+          <img
+            src={user.photo ?? `https://i.pravatar.cc/32?u=${user.nom}`}
+            alt={user.nom}
+            className="w-7 h-7 rounded-full object-cover shrink-0 border border-border"
+          />
+          {!collapsed && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">{user.nom}</p>
+                <p className="text-[11px] text-muted-foreground capitalize">{user.role}</p>
+              </div>
+              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0" title="Log out">
+                <LogOut className="w-4 h-4" />
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Collapse toggle */}

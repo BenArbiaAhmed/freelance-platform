@@ -6,6 +6,7 @@ import { MissionsTab } from '@/components/dashboard/MissionsTab'
 import { FreelancersTab } from '@/components/dashboard/FreelancersTab'
 import { ApplicationsTab } from '@/components/dashboard/ApplicationsTab'
 import { ContractsTab } from '@/components/dashboard/ContractsTab'
+import { ProfileTab } from '@/components/dashboard/ProfileTab'
 
 const mockUser = {
   nom: 'Aisha Kamara',
@@ -18,11 +19,26 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [role, setRole] = useState<'freelance' | 'client'>('freelance')
 
+  // Detail selection — cleared when navigating to a different tab
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
+  const [selectedFreelancerId, setSelectedFreelancerId] = useState<string | null>(null)
+
+  function navigate(nextTab: DashTab) {
+    if (nextTab !== 'missions') setSelectedMissionId(null)
+    if (nextTab !== 'freelancers') setSelectedFreelancerId(null)
+    setTab(nextTab)
+  }
+
+  function openMission(id: string) {
+    setSelectedMissionId(id)
+    setTab('missions')
+  }
+
   return (
     <div className="flex h-screen bg-secondary/30 overflow-hidden">
       <Sidebar
         active={tab}
-        onNavigate={setTab}
+        onNavigate={navigate}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
         user={{ ...mockUser, role }}
@@ -36,11 +52,28 @@ export default function DashboardPage() {
         />
 
         <main className="flex-1 overflow-y-auto p-6">
-          {tab === 'overview' && <OverviewTab role={role} />}
-          {tab === 'missions' && <MissionsTab />}
-          {tab === 'freelancers' && <FreelancersTab />}
+          {tab === 'overview' && (
+            <OverviewTab
+              role={role}
+              onNavigate={navigate}
+              onSelectMission={openMission}
+            />
+          )}
+          {tab === 'missions' && (
+            <MissionsTab
+              selectedId={selectedMissionId}
+              onSelect={setSelectedMissionId}
+            />
+          )}
+          {tab === 'freelancers' && (
+            <FreelancersTab
+              selectedId={selectedFreelancerId}
+              onSelect={setSelectedFreelancerId}
+            />
+          )}
           {tab === 'applications' && <ApplicationsTab />}
           {tab === 'contracts' && <ContractsTab />}
+          {tab === 'profile' && <ProfileTab role={role} />}
         </main>
       </div>
     </div>

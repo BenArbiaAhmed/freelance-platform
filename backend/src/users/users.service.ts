@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
+import { FreelanceProfile } from './entities/freelance-profile.entity';
+import { ClientProfile } from './entities/client-profile.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -10,10 +12,26 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
+    @InjectRepository(FreelanceProfile)
+    private readonly freelanceProfileRepo: Repository<FreelanceProfile>,
+    @InjectRepository(ClientProfile)
+    private readonly clientProfileRepo: Repository<ClientProfile>,
   ) {}
 
-  create(dto: CreateUserDto): Promise<User> {
-    return this.repo.save(this.repo.create(dto));
+  async create(dto: CreateUserDto): Promise<User> {
+    const user = await this.repo.save(this.repo.create(dto));
+
+    if (user.role === UserRole.FREELANCE) {
+      await this.freelanceProfileRepo.save(
+        this.freelanceProfileRepo.create({ userId: user.id, user }),
+      );
+    } else if (user.role === UserRole.CLIENT) {
+      await this.clientProfileRepo.save(
+        this.clientProfileRepo.create({ userId: user.id, user }),
+      );
+    }
+
+    return user;
   }
 
   findAll(): Promise<User[]> {

@@ -25,7 +25,8 @@ export class FreelanceProfilesService {
       where: { id },
       relations: { user: true, competences: true },
     });
-    if (!profile) throw new NotFoundException(`FreelanceProfile ${id} not found`);
+    if (!profile)
+      throw new NotFoundException(`FreelanceProfile ${id} not found`);
     return profile;
   }
 

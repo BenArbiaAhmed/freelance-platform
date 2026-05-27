@@ -29,7 +29,9 @@ export class Candidature {
   @Column('uuid')
   missionId: string;
 
-  @ManyToOne(() => FreelanceProfile, (freelance) => freelance.candidatures, { onDelete: 'CASCADE' })
+  @ManyToOne(() => FreelanceProfile, (freelance) => freelance.candidatures, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'freelanceId' })
   freelance: FreelanceProfile;
 

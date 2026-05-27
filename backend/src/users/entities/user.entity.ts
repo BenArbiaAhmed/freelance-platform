@@ -5,7 +5,9 @@ import {
   CreateDateColumn,
   OneToOne,
   OneToMany,
+  BeforeInsert,
 } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { FreelanceProfile } from './freelance-profile.entity';
 import { ClientProfile } from './client-profile.entity';
 import { Webhook } from '../../webhooks/entities/webhook.entity';
@@ -27,7 +29,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  // select: false keeps the password hash out of regular queries; it must be
+  // explicitly selected (see UsersService.findByEmailWithPassword) for login.
+  @Column({ select: false })
   motDePasse: string;
 
   @Column({ type: 'enum', enum: UserRole })
@@ -50,4 +54,14 @@ export class User {
 
   @OneToMany(() => Webhook, (webhook) => webhook.user)
   webhooks: Webhook[];
+
+  // Hash the password before it is first persisted. Updates that change the
+  // password are hashed explicitly in UsersService.update to avoid re-hashing
+  // an already-hashed value.
+  @BeforeInsert()
+  async hashPassword(): Promise<void> {
+    if (this.motDePasse) {
+      this.motDePasse = await bcrypt.hash(this.motDePasse, 10);
+    }
+  }
 }

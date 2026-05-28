@@ -23,8 +23,21 @@ export class CandidaturesService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  findAll(): Promise<Candidature[]> {
-    return this.repo.find();
+  findAll(
+    filter: { freelanceId?: string; clientId?: string } = {},
+  ): Promise<Candidature[]> {
+    const { freelanceId, clientId } = filter;
+    return this.repo.find({
+      where: {
+        ...(freelanceId ? { freelanceId } : {}),
+        ...(clientId ? { mission: { clientId } } : {}),
+      },
+      relations: {
+        mission: true,
+        freelance: { user: true, competences: { competence: true } },
+      },
+      order: { dateCreation: 'DESC' },
+    });
   }
 
   async findOne(id: string): Promise<Candidature> {

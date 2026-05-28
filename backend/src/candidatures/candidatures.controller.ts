@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Sse,
   MessageEvent,
 } from '@nestjs/common';
@@ -26,8 +27,11 @@ export class CandidaturesController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(
+    @Query('freelanceId') freelanceId?: string,
+    @Query('clientId') clientId?: string,
+  ) {
+    return this.service.findAll({ freelanceId, clientId });
   }
 
   @Get(':id')

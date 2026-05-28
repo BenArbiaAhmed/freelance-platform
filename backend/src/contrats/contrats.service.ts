@@ -15,8 +15,22 @@ export class ContratsService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  findAll(): Promise<Contrat[]> {
-    return this.repo.find();
+  findAll(
+    filter: { clientId?: string; freelanceId?: string } = {},
+  ): Promise<Contrat[]> {
+    const { clientId, freelanceId } = filter;
+    return this.repo.find({
+      where: {
+        ...(clientId ? { clientId } : {}),
+        ...(freelanceId ? { freelanceId } : {}),
+      },
+      relations: {
+        mission: true,
+        client: { user: true },
+        freelance: { user: true },
+      },
+      order: { dateCreation: 'DESC' },
+    });
   }
 
   async findOne(id: string): Promise<Contrat> {

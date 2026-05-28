@@ -8,17 +8,15 @@ import { ApplicationsTab } from '@/components/dashboard/ApplicationsTab'
 import { ContractsTab } from '@/components/dashboard/ContractsTab'
 import { ProfileTab } from '@/components/dashboard/ProfileTab'
 import { ChatPopup } from '@/components/dashboard/ChatPopup'
-
-const mockUser = {
-  nom: 'Aisha Kamara',
-  role: 'freelance' as 'freelance' | 'client',
-  photo: 'https://i.pravatar.cc/40?img=47',
-}
+import { useAuthStore } from '@/store/auth'
 
 export default function DashboardPage() {
+  const user = useAuthStore((s) => s.user)
   const [tab, setTab] = useState<DashTab>('overview')
   const [collapsed, setCollapsed] = useState(false)
-  const [role, setRole] = useState<'freelance' | 'client'>('freelance')
+  const [role, setRole] = useState<'freelance' | 'client'>(
+    user?.role === 'client' ? 'client' : 'freelance',
+  )
 
   // Detail selection — cleared when navigating to a different tab
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
@@ -42,7 +40,7 @@ export default function DashboardPage() {
         onNavigate={navigate}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
-        user={{ ...mockUser, role }}
+        user={{ nom: user?.nom ?? 'User', role, photo: user?.photo ?? undefined }}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

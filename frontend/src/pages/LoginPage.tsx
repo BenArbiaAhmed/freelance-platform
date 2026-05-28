@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,6 +7,7 @@ import { Eye, EyeOff, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuthStore } from '@/store/auth'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -19,6 +20,9 @@ const dotGridUrl = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
+  const login = useAuthStore((s) => s.login)
+  const serverError = useAuthStore((s) => s.error)
 
   const {
     register,
@@ -26,9 +30,13 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  function onSubmit(data: FormData) {
-    // TODO: wire to POST /api/auth/login
-    console.log(data)
+  async function onSubmit(data: FormData) {
+    try {
+      await login(data.email, data.password)
+      navigate('/dashboard')
+    } catch {
+      // error surfaced via the auth store
+    }
   }
 
   return (
@@ -106,6 +114,10 @@ export default function LoginPage() {
                 <p className="mt-1.5 text-xs text-destructive">{errors.password.message}</p>
               )}
             </div>
+
+            {serverError && (
+              <p className="text-sm text-destructive text-center -mt-1">{serverError}</p>
+            )}
 
             <Button type="submit" size="lg" className="w-full mt-1 shadow-md shadow-primary/20" disabled={isSubmitting}>
               {isSubmitting ? 'Logging in…' : 'Log in'}

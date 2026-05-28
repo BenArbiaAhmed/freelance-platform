@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Briefcase, BookOpen, FileText, DollarSign, TrendingUp, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { MISSIONS, MY_CANDIDATURES, MY_CONTRATS } from '@/lib/mock-data'
+import { MY_CANDIDATURES, MY_CONTRATS } from '@/lib/mock-data'
+import { useMissionsStore } from '@/store/missions'
 import type { DashTab } from '@/components/dashboard/Sidebar'
 
 const statusColors: Record<string, string> = {
@@ -19,9 +21,15 @@ interface Props {
 }
 
 export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
+  const { missions, fetchMissions } = useMissionsStore()
+
+  useEffect(() => {
+    fetchMissions()
+  }, [fetchMissions])
+
   const stats = role === 'freelance'
     ? [
-        { label: 'Open Missions', value: MISSIONS.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '+4 this week', tab: 'missions' as DashTab },
+        { label: 'Open Missions', value: missions.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '+4 this week', tab: 'missions' as DashTab },
         { label: 'My Applications', value: MY_CANDIDATURES.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${MY_CANDIDATURES.filter(c => c.statut === 'pending').length} pending`, tab: 'applications' as DashTab },
         { label: 'Active Contracts', value: MY_CONTRATS.filter(c => c.statut === 'signed').length, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
         { label: 'Total Earned', value: '$4,350', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$1,750 this month', tab: null },
@@ -76,7 +84,7 @@ export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
               </button>
             </div>
             <ul className="divide-y divide-border">
-              {MISSIONS.slice(0, 4).map((m) => (
+              {missions.slice(0, 4).map((m) => (
                 <li
                   key={m.id}
                   className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors cursor-pointer"

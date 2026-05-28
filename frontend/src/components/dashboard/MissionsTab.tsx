@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Calendar, Users, ArrowRight, Search, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -6,10 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { MissionDetail } from '@/components/dashboard/MissionDetail'
 import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
-import { MISSIONS, type Mission } from '@/lib/mock-data'
+import { type Mission } from '@/lib/mock-data'
+import { useMissionsStore } from '@/store/missions'
 import { cn } from '@/lib/utils'
-
-const ALL_SKILLS = Array.from(new Set(MISSIONS.flatMap((m) => m.competencesRequises)))
 
 interface Props {
   selectedId: string | null
@@ -18,14 +17,21 @@ interface Props {
 }
 
 export function MissionsTab({ selectedId, onSelect, role }: Props) {
+  const { missions, loading, error, fetchMissions } = useMissionsStore()
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchMissions()
+  }, [fetchMissions])
+
+  const ALL_SKILLS = Array.from(new Set(missions.flatMap((m) => m.competencesRequises)))
 
   if (selectedId) {
     return <MissionDetail missionId={selectedId} onBack={() => onSelect(null)} />
   }
 
-  const filtered = MISSIONS.filter((m) => {
+  const filtered = missions.filter((m) => {
     const matchesSearch =
       search === '' ||
       m.titre.toLowerCase().includes(search.toLowerCase()) ||
@@ -92,6 +98,12 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
         </div>
       )}
 
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground">{filtered.length} mission{filtered.length !== 1 ? 's' : ''} found</p>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -100,7 +112,13 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {loading && missions.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-sm">Loading missions…</p>
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-sm">No missions match your filters.</p>
         </div>

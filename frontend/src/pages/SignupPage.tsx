@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
 
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -41,6 +42,9 @@ const roles = [
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
+  const registerUser = useAuthStore((s) => s.register)
+  const serverError = useAuthStore((s) => s.error)
 
   const {
     register,
@@ -52,9 +56,18 @@ export default function SignupPage() {
 
   const selectedRole = watch('role')
 
-  function onSubmit(data: FormData) {
-    // TODO: wire to POST /api/auth/register
-    console.log(data)
+  async function onSubmit(data: FormData) {
+    try {
+      await registerUser({
+        nom: data.name,
+        email: data.email,
+        motDePasse: data.password,
+        role: data.role,
+      })
+      navigate('/dashboard')
+    } catch {
+      // error surfaced via the auth store
+    }
   }
 
   return (
@@ -173,6 +186,10 @@ export default function SignupPage() {
                 <p className="mt-1.5 text-xs text-destructive">{errors.password.message}</p>
               )}
             </div>
+
+            {serverError && (
+              <p className="text-sm text-destructive text-center -mt-1">{serverError}</p>
+            )}
 
             <Button type="submit" size="lg" className="w-full mt-1 shadow-md shadow-primary/20" disabled={isSubmitting}>
               {isSubmitting ? 'Creating account…' : 'Create account'}

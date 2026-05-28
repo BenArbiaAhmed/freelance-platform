@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
+import { useAuthStore } from '@/store/auth'
+import { useMissionsStore } from '@/store/missions'
+import { api, apiErrorMessage } from '@/lib/api'
 
 // Mirrors CreateMissionDto (clientId injected server-side from JWT in real app)
 const schema = z.object({
@@ -38,6 +41,9 @@ export function CreateMissionModal({ children }: Props) {
   const [done, setDone] = useState(false)
   const [skills, setSkills] = useState<string[]>([])
   const [skillInput, setSkillInput] = useState('')
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const clientId = useAuthStore((s) => s.user?.clientProfile?.id)
+  const fetchMissions = useMissionsStore((s) => s.fetchMissions)
 
   const {
     register,
@@ -60,16 +66,32 @@ export function CreateMissionModal({ children }: Props) {
     setSkills((p) => p.filter((x) => x !== s))
   }
 
-  function onSubmit(_data: FormData) {
-    // TODO: POST /api/missions  { ...data, competencesRequises: skills, clientId: me.clientProfile.id }
-    return new Promise<void>((res) =>
-      setTimeout(() => { setDone(true); res() }, 600)
-    )
+  async function onSubmit(data: FormData) {
+    setSubmitError(null)
+    if (!clientId) {
+      setSubmitError('Only clients can post missions.')
+      return
+    }
+    try {
+      await api.post('/missions', {
+        clientId,
+        titre: data.titre,
+        description: data.description,
+        budget: Number(data.budget),
+        statut: data.statut,
+        competencesRequises: skills,
+        ...(data.deadline ? { deadline: data.deadline } : {}),
+      })
+      await fetchMissions()
+      setDone(true)
+    } catch (err) {
+      setSubmitError(apiErrorMessage(err, 'Could not publish your mission'))
+    }
   }
 
   function handleOpenChange(v: boolean) {
     setOpen(v)
-    if (!v) { reset(); setSkills([]); setSkillInput(''); setDone(false) }
+    if (!v) { reset(); setSkills([]); setSkillInput(''); setDone(false); setSubmitError(null) }
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -190,6 +212,10 @@ export function CreateMissionModal({ children }: Props) {
                 ))}
               </div>
             </div>
+
+            {submitError && (
+              <p className="text-sm text-destructive">{submitError}</p>
+            )}
 
             {/* Footer */}
             <div className="flex gap-3 pt-2 border-t border-border mt-1">

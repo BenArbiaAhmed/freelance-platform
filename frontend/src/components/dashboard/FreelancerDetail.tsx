@@ -2,7 +2,8 @@ import { ArrowLeft, Star, MapPin, CheckCircle2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { FREELANCERS, MISSIONS } from '@/lib/mock-data'
+import { useFreelancersStore } from '@/store/freelancers'
+import { useMissionsStore } from '@/store/missions'
 import { cn } from '@/lib/utils'
 
 const niveauConfig: Record<string, { label: string; width: string; color: string }> = {
@@ -18,11 +19,9 @@ interface Props {
 }
 
 export function FreelancerDetail({ freelancerId, onBack }: Props) {
-  const freelancer = FREELANCERS.find((f) => f.id === freelancerId)
+  const freelancer = useFreelancersStore((s) => s.freelancers.find((f) => f.id === freelancerId))
+  const pastMissions = useMissionsStore((s) => s.missions).slice(0, 3)
   if (!freelancer) return null
-
-  // Mock: show 3 random missions as "past missions"
-  const pastMissions = MISSIONS.slice(0, 3)
 
   const stats = [
     { label: 'Missions done', value: '14' },

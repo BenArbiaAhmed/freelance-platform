@@ -1,6 +1,7 @@
 import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
 
 export type DashTab = 'overview' | 'missions' | 'freelancers' | 'applications' | 'contracts' | 'profile'
 
@@ -27,6 +28,14 @@ interface Props {
 }
 
 export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user }: Props) {
+  const navigate = useNavigate()
+  const logout = useAuthStore((s) => s.logout)
+
+  function handleLogout() {
+    logout()
+    navigate('/')
+  }
+
   return (
     <aside
       className={cn(
@@ -94,9 +103,13 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
                 <p className="text-xs font-medium text-foreground truncate">{user.nom}</p>
                 <p className="text-[11px] text-muted-foreground capitalize">{user.role}</p>
               </div>
-              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0" title="Log out">
+              <button
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                title="Log out"
+              >
                 <LogOut className="w-4 h-4" />
-              </Link>
+              </button>
             </>
           )}
         </div>

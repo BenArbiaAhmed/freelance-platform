@@ -1,14 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Star, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { FreelancerDetail } from '@/components/dashboard/FreelancerDetail'
-import { FREELANCERS, type FreelanceProfile } from '@/lib/mock-data'
+import { type FreelanceProfile } from '@/lib/mock-data'
+import { useFreelancersStore } from '@/store/freelancers'
 import { cn } from '@/lib/utils'
-
-const ALL_SKILLS = Array.from(new Set(FREELANCERS.flatMap((f) => f.competences.map((c) => c.nom))))
 
 interface Props {
   selectedId: string | null
@@ -16,15 +15,22 @@ interface Props {
 }
 
 export function FreelancersTab({ selectedId, onSelect }: Props) {
+  const { freelancers, loading, error, fetchFreelancers } = useFreelancersStore()
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
   const [availableOnly, setAvailableOnly] = useState(false)
+
+  useEffect(() => {
+    fetchFreelancers()
+  }, [fetchFreelancers])
+
+  const ALL_SKILLS = Array.from(new Set(freelancers.flatMap((f) => f.competences.map((c) => c.nom))))
 
   if (selectedId) {
     return <FreelancerDetail freelancerId={selectedId} onBack={() => onSelect(null)} />
   }
 
-  const filtered = FREELANCERS.filter((f) => {
+  const filtered = freelancers.filter((f) => {
     const matchesSearch =
       search === '' ||
       f.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -76,6 +82,12 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       <p className="text-sm text-muted-foreground">{filtered.length} freelancer{filtered.length !== 1 ? 's' : ''} found</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -84,7 +96,13 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {loading && freelancers.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-sm">Loading freelancers…</p>
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-sm">No freelancers match your filters.</p>
         </div>

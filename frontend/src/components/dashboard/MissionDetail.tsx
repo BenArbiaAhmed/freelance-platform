@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Calendar, Users, Building2, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
-import { MISSIONS, FREELANCERS } from '@/lib/mock-data'
+import { useMissionsStore } from '@/store/missions'
+import { useFreelancersStore } from '@/store/freelancers'
+import { useAuthStore } from '@/store/auth'
+import { api, apiErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const applySchema = z.object({
@@ -21,16 +24,21 @@ const applySchema = z.object({
 })
 type ApplyForm = z.infer<typeof applySchema>
 
-const mockApplicants = FREELANCERS.slice(0, 3)
-
 interface Props {
   missionId: string
   onBack: () => void
 }
 
 export function MissionDetail({ missionId, onBack }: Props) {
-  const mission = MISSIONS.find((m) => m.id === missionId)
+  const mission = useMissionsStore((s) => s.missions.find((m) => m.id === missionId))
+  const { freelancers, fetchFreelancers } = useFreelancersStore()
+  const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
   const [submitted, setSubmitted] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (freelancers.length === 0) fetchFreelancers()
+  }, [freelancers.length, fetchFreelancers])
 
   const {
     register,
@@ -40,13 +48,29 @@ export function MissionDetail({ missionId, onBack }: Props) {
 
   if (!mission) return null
 
+  const applicants = freelancers.slice(0, 3)
+
   const daysLeft = Math.ceil(
     (new Date(mission.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
 
-  function onSubmit(_data: ApplyForm) {
-    // TODO: POST /api/missions/:id/candidatures
-    setTimeout(() => setSubmitted(true), 600)
+  async function onSubmit(data: ApplyForm) {
+    setApplyError(null)
+    if (!freelanceId) {
+      setApplyError('Only freelancers can apply to missions.')
+      return
+    }
+    try {
+      await api.post('/candidatures', {
+        missionId,
+        freelanceId,
+        lettre: data.lettre,
+        tarifPropose: Number(data.tarifPropose),
+      })
+      setSubmitted(true)
+    } catch (err) {
+      setApplyError(apiErrorMessage(err, 'Could not submit your application'))
+    }
   }
 
   return (
@@ -138,7 +162,7 @@ export function MissionDetail({ missionId, onBack }: Props) {
                 <h2 className="text-sm font-semibold text-foreground">Recent applicants</h2>
               </div>
               <ul className="divide-y divide-border">
-                {mockApplicants.map((f) => (
+                {applicants.map((f) => (
                   <li key={f.id} className="flex items-center gap-3 px-6 py-4">
                     <div className="relative shrink-0">
                       <img src={f.photo} alt={f.nom} className="w-9 h-9 rounded-full object-cover border border-border" />
@@ -220,6 +244,10 @@ export function MissionDetail({ missionId, onBack }: Props) {
                       <p className="mt-1 text-xs text-destructive">{errors.lettre.message}</p>
                     )}
                   </div>
+
+                  {applyError && (
+                    <p className="text-xs text-destructive">{applyError}</p>
+                  )}
 
                   <Button type="submit" className="w-full shadow-md shadow-primary/20" disabled={isSubmitting}>
                     {isSubmitting ? 'Sending…' : 'Send application'}

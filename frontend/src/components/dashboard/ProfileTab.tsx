@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { useAuthStore } from '@/store/auth'
+import { api, apiErrorMessage } from '@/lib/api'
 
 // ─── Schemas (mirror backend DTOs) ──────────────────────────────────────────
 
@@ -68,17 +70,20 @@ const SUGGESTED_SKILLS = [
   'Docker', 'Figma', 'Python', 'AWS', 'Tailwind CSS', 'Vue.js',
 ]
 
-interface Skill { nom: string; niveau: Niveau }
+interface Skill { id: string; nom: string; niveau: Niveau; competenceId: string }
 
-interface MockUser {
+interface FreelanceCompetenceResp {
+  id: string
+  freelanceId: string
+  competenceId: string
+  niveau: Niveau
+  competence: { id: string; nom: string; categorie: string | null }
+}
+
+interface CompetenceResp {
+  id: string
   nom: string
-  email: string
-  bio: string
-  photo: string
-  role: 'freelance' | 'client'
-  freelanceProfile?: { tarifJournalier: number; disponible: boolean }
-  clientProfile?: { entreprise: string; siteWeb: string }
-  competences: Skill[]
+  categorie: string | null
 }
 
 // ─── Saved banner ────────────────────────────────────────────────────────────
@@ -88,6 +93,10 @@ function SavedBanner() {
       <CheckCircle2 className="w-3.5 h-3.5" /> Saved
     </span>
   )
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return <span className="text-xs text-destructive">{message}</span>
 }
 
 // ─── Section wrapper ─────────────────────────────────────────────────────────
@@ -107,46 +116,38 @@ function Section({ title, description, children }: { title: string; description?
 interface Props { role: 'freelance' | 'client' }
 
 export function ProfileTab({ role }: Props) {
-  // Mock user initialised from role — matches backend entity shapes
-  const mockUser: MockUser = role === 'freelance'
-    ? {
-        nom: 'Aisha Kamara',
-        email: 'aisha.kamara@email.com',
-        bio: 'Full-stack developer with 6 years building SaaS products. Passionate about developer experience and clean APIs.',
-        photo: 'https://i.pravatar.cc/120?img=47',
-        role: 'freelance',
-        freelanceProfile: { tarifJournalier: 480, disponible: true },
-        clientProfile: undefined,
-        competences: [
-          { nom: 'React', niveau: 'expert' },
-          { nom: 'TypeScript', niveau: 'expert' },
-          { nom: 'NestJS', niveau: 'avance' },
-          { nom: 'PostgreSQL', niveau: 'avance' },
-        ],
-      }
-    : {
-        nom: 'Sophie Laurent',
-        email: 'sophie.laurent@nexora.io',
-        bio: 'CTO at Nexora. Building the future of real-time collaboration tools.',
-        photo: 'https://i.pravatar.cc/120?img=5',
-        role: 'client',
-        freelanceProfile: undefined,
-        clientProfile: { entreprise: 'Nexora', siteWeb: 'https://nexora.io' },
-        competences: [],
-      }
+  const { user, loadProfile } = useAuthStore()
 
-  const [photoPreview, setPhotoPreview] = useState(mockUser.photo)
+  const [photoPreview, setPhotoPreview] = useState(user?.photo ?? '')
   const [personalSaved, setPersonalSaved] = useState(false)
+  const [personalError, setPersonalError] = useState<string | null>(null)
   const [roleSaved, setRoleSaved] = useState(false)
+  const [roleError, setRoleError] = useState<string | null>(null)
   const [securitySaved, setSecuritySaved] = useState(false)
+  const [securityError, setSecurityError] = useState<string | null>(null)
 
   // ── Skills state (freelance only) ──
-  const [skills, setSkills] = useState<Skill[]>(mockUser.competences)
+  const [skills, setSkills] = useState<Skill[]>([])
   const [newSkillNom, setNewSkillNom] = useState('')
   const [newSkillNiveau, setNewSkillNiveau] = useState<Niveau>('intermediaire')
 
-  // ── Disponible toggle state (freelance only) ──
-  const [disponible, setDisponible] = useState(mockUser.freelanceProfile?.disponible ?? true)
+  // Load freelance competences from backend
+  useEffect(() => {
+    if (role !== 'freelance' || !user?.freelanceProfile?.id) return
+    api.get<FreelanceCompetenceResp[]>('/freelance-competences')
+      .then(({ data }) => {
+        const mySkills = data
+          .filter((fc) => fc.freelanceId === user.freelanceProfile!.id)
+          .map((fc) => ({
+            id: fc.id,
+            nom: fc.competence.nom,
+            niveau: fc.niveau,
+            competenceId: fc.competenceId,
+          }))
+        setSkills(mySkills)
+      })
+      .catch(() => {})
+  }, [role, user?.freelanceProfile?.id])
 
   // ─── Personal info form ───────────────────────────────────────────────────
   const {
@@ -156,32 +157,56 @@ export function ProfileTab({ role }: Props) {
     formState: { errors: errPersonal, isSubmitting: subPersonal },
   } = useForm<PersonalForm>({
     resolver: zodResolver(personalSchema),
-    defaultValues: { nom: mockUser.nom, email: mockUser.email, bio: mockUser.bio, photo: mockUser.photo },
+    defaultValues: {
+      nom: user?.nom ?? '',
+      email: user?.email ?? '',
+      bio: user?.bio ?? '',
+      photo: user?.photo ?? '',
+    },
   })
 
   const watchedPhoto = watchPersonal('photo')
 
-  function onPersonalSubmit(_data: PersonalForm) {
-    // TODO: PATCH /api/users/:id
-    return new Promise<void>((res) => setTimeout(() => { setPersonalSaved(true); res() }, 500))
+  async function onPersonalSubmit(data: PersonalForm) {
+    setPersonalError(null)
+    try {
+      await api.patch(`/users/${user!.id}`, data)
+      await loadProfile()
+      setPersonalSaved(true)
+    } catch (err) {
+      setPersonalError(apiErrorMessage(err, 'Could not save personal info'))
+    }
   }
 
   // ─── Freelance profile form ───────────────────────────────────────────────
   const {
     register: regFreelance,
     handleSubmit: handleFreelance,
+    watch: watchFreelance,
+    setValue: setFreelanceValue,
     formState: { errors: errFreelance, isSubmitting: subFreelance },
   } = useForm<FreelanceForm>({
     resolver: zodResolver(freelanceSchema),
     defaultValues: {
-      tarifJournalier: String(mockUser.freelanceProfile?.tarifJournalier ?? ''),
-      disponible: mockUser.freelanceProfile?.disponible ?? true,
+      tarifJournalier: String(user?.freelanceProfile?.tarifJournalier ?? ''),
+      disponible: user?.freelanceProfile?.disponible ?? true,
     },
   })
 
-  function onFreelanceSubmit(_data: FreelanceForm) {
-    // TODO: PATCH /api/freelance-profiles/:id
-    return new Promise<void>((res) => setTimeout(() => { setRoleSaved(true); res() }, 500))
+  const disponible = watchFreelance('disponible')
+
+  async function onFreelanceSubmit(data: FreelanceForm) {
+    setRoleError(null)
+    try {
+      await api.patch(`/freelance-profiles/${user!.freelanceProfile!.id}`, {
+        tarifJournalier: data.tarifJournalier ? Number(data.tarifJournalier) : undefined,
+        disponible: data.disponible,
+      })
+      await loadProfile()
+      setRoleSaved(true)
+    } catch (err) {
+      setRoleError(apiErrorMessage(err, 'Could not save freelance profile'))
+    }
   }
 
   // ─── Client profile form ──────────────────────────────────────────────────
@@ -192,14 +217,20 @@ export function ProfileTab({ role }: Props) {
   } = useForm<ClientForm>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      entreprise: mockUser.clientProfile?.entreprise ?? '',
-      siteWeb: mockUser.clientProfile?.siteWeb ?? '',
+      entreprise: user?.clientProfile?.entreprise ?? '',
+      siteWeb: user?.clientProfile?.siteWeb ?? '',
     },
   })
 
-  function onClientSubmit(_data: ClientForm) {
-    // TODO: PATCH /api/client-profiles/:id
-    return new Promise<void>((res) => setTimeout(() => { setRoleSaved(true); res() }, 500))
+  async function onClientSubmit(data: ClientForm) {
+    setRoleError(null)
+    try {
+      await api.patch(`/client-profiles/${user!.clientProfile!.id}`, data)
+      await loadProfile()
+      setRoleSaved(true)
+    } catch (err) {
+      setRoleError(apiErrorMessage(err, 'Could not save company profile'))
+    }
   }
 
   // ─── Security form ────────────────────────────────────────────────────────
@@ -210,28 +241,68 @@ export function ProfileTab({ role }: Props) {
     formState: { errors: errSecurity, isSubmitting: subSecurity },
   } = useForm<SecurityForm>({ resolver: zodResolver(securitySchema) })
 
-  function onSecuritySubmit(_data: SecurityForm) {
-    // TODO: PATCH /api/users/:id  { motDePasse: newPassword }
-    return new Promise<void>((res) => setTimeout(() => { setSecuritySaved(true); resetSecurity(); res() }, 500))
+  async function onSecuritySubmit(data: SecurityForm) {
+    setSecurityError(null)
+    try {
+      await api.patch(`/users/${user!.id}`, { motDePasse: data.motDePasse })
+      setSecuritySaved(true)
+      resetSecurity()
+    } catch (err) {
+      setSecurityError(apiErrorMessage(err, 'Could not update password'))
+    }
   }
 
   // ─── Skill helpers ────────────────────────────────────────────────────────
-  function addSkill() {
+  async function addSkill() {
     const nom = newSkillNom.trim()
     if (!nom || skills.some((s) => s.nom.toLowerCase() === nom.toLowerCase())) return
-    setSkills((prev) => [...prev, { nom, niveau: newSkillNiveau }])
-    setNewSkillNom('')
-    // TODO: POST /api/freelance-competences
+
+    try {
+      // Find or create the competence
+      const { data: allCompetences } = await api.get<CompetenceResp[]>('/competences')
+      const existing = allCompetences.find((c) => c.nom.toLowerCase() === nom.toLowerCase())
+      let competenceId: string
+      if (existing) {
+        competenceId = existing.id
+      } else {
+        const { data: newComp } = await api.post<CompetenceResp>('/competences', { nom })
+        competenceId = newComp.id
+      }
+
+      const { data: fc } = await api.post<FreelanceCompetenceResp>('/freelance-competences', {
+        freelanceId: user!.freelanceProfile!.id,
+        competenceId,
+        niveau: newSkillNiveau,
+      })
+
+      setSkills((prev) => [...prev, {
+        id: fc.id,
+        nom: fc.competence?.nom ?? nom,
+        niveau: fc.niveau,
+        competenceId: fc.competenceId,
+      }])
+      setNewSkillNom('')
+    } catch {
+      // silent — could add inline error if needed
+    }
   }
 
-  function removeSkill(nom: string) {
-    setSkills((prev) => prev.filter((s) => s.nom !== nom))
-    // TODO: DELETE /api/freelance-competences/:id
+  async function removeSkill(skillId: string) {
+    setSkills((prev) => prev.filter((s) => s.id !== skillId))
+    try {
+      await api.delete(`/freelance-competences/${skillId}`)
+    } catch {
+      // optimistic removal — backend may already be gone
+    }
   }
 
-  function changeSkillNiveau(nom: string, niveau: Niveau) {
-    setSkills((prev) => prev.map((s) => s.nom === nom ? { ...s, niveau } : s))
-    // TODO: PATCH /api/freelance-competences/:id
+  async function changeSkillNiveau(skillId: string, niveau: Niveau) {
+    setSkills((prev) => prev.map((s) => s.id === skillId ? { ...s, niveau } : s))
+    try {
+      await api.patch(`/freelance-competences/${skillId}`, { niveau })
+    } catch {
+      // silent
+    }
   }
 
   return (
@@ -241,7 +312,7 @@ export function ProfileTab({ role }: Props) {
       <div className="flex items-center gap-5">
         <div className="relative group shrink-0">
           <img
-            src={watchedPhoto || photoPreview}
+            src={watchedPhoto || photoPreview || 'https://i.pravatar.cc/120?img=47'}
             alt="Profile"
             className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
             onError={() => setPhotoPreview('https://i.pravatar.cc/120?img=47')}
@@ -251,7 +322,7 @@ export function ProfileTab({ role }: Props) {
           </div>
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">{mockUser.nom}</h1>
+          <h1 className="text-xl font-bold text-foreground">{user?.nom ?? ''}</h1>
           <p className="text-sm text-muted-foreground capitalize mt-0.5">{role === 'freelance' ? 'Freelancer' : 'Client'}</p>
         </div>
       </div>
@@ -301,6 +372,7 @@ export function ProfileTab({ role }: Props) {
 
               <div className="flex items-center justify-between pt-1 border-t border-border">
                 {personalSaved && <SavedBanner />}
+                {personalError && <ErrorBanner message={personalError} />}
                 <Button
                   type="submit"
                   size="sm"
@@ -322,7 +394,7 @@ export function ProfileTab({ role }: Props) {
       {role === 'freelance' ? (
         <Section
           title="Freelancer profile"
-          description="Details visible to clients. Kept in sync with PATCH /api/freelance-profiles/:id."
+          description="Details visible to clients."
         >
           <div className="flex flex-col gap-4">
             {/* Rate + availability */}
@@ -350,7 +422,7 @@ export function ProfileTab({ role }: Props) {
                       <div className="flex items-center gap-3">
                         <Switch
                           checked={disponible}
-                          onCheckedChange={(v) => { setDisponible(v) }}
+                          onCheckedChange={(v) => setFreelanceValue('disponible', v)}
                         />
                         <span className={`text-sm font-medium ${disponible ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                           {disponible ? 'Available for new missions' : 'Not available'}
@@ -361,6 +433,7 @@ export function ProfileTab({ role }: Props) {
 
                   <div className="flex items-center justify-between pt-1 border-t border-border">
                     {roleSaved && <SavedBanner />}
+                    {roleError && <ErrorBanner message={roleError} />}
                     <Button
                       type="submit"
                       size="sm"
@@ -381,7 +454,7 @@ export function ProfileTab({ role }: Props) {
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Skills & expertise</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Add or remove skills. Changes sync to POST/DELETE /api/freelance-competences.
+                    Add or remove skills. Synced with the backend.
                   </p>
                 </div>
 
@@ -389,13 +462,13 @@ export function ProfileTab({ role }: Props) {
                 <div className="flex flex-wrap gap-2">
                   {skills.map((s) => (
                     <div
-                      key={s.nom}
+                      key={s.id}
                       className="flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 shadow-sm"
                     >
                       <span className="text-sm font-medium text-foreground">{s.nom}</span>
                       <select
                         value={s.niveau}
-                        onChange={(e) => changeSkillNiveau(s.nom, e.target.value as Niveau)}
+                        onChange={(e) => changeSkillNiveau(s.id, e.target.value as Niveau)}
                         className={`text-xs rounded-full px-1.5 py-0.5 font-medium border-0 outline-none cursor-pointer ${NIVEAU_COLOR[s.niveau]}`}
                       >
                         {NIVEAUX.map((n) => (
@@ -404,7 +477,7 @@ export function ProfileTab({ role }: Props) {
                       </select>
                       <button
                         type="button"
-                        onClick={() => removeSkill(s.nom)}
+                        onClick={() => removeSkill(s.id)}
                         className="text-muted-foreground hover:text-destructive transition-colors"
                         aria-label={`Remove ${s.nom}`}
                       >
@@ -470,7 +543,7 @@ export function ProfileTab({ role }: Props) {
       ) : (
         <Section
           title="Company profile"
-          description="Details about your company. Visible to freelancers viewing your missions. Kept in sync with PATCH /api/client-profiles/:id."
+          description="Details about your company. Visible to freelancers viewing your missions."
         >
           <Card>
             <CardContent className="p-6">
@@ -500,6 +573,7 @@ export function ProfileTab({ role }: Props) {
 
                 <div className="flex items-center justify-between pt-1 border-t border-border">
                   {roleSaved && <SavedBanner />}
+                  {roleError && <ErrorBanner message={roleError} />}
                   <Button
                     type="submit"
                     size="sm"
@@ -521,7 +595,7 @@ export function ProfileTab({ role }: Props) {
       {/* ── Security ── */}
       <Section
         title="Security"
-        description="Update your password. We recommend using a unique, strong password. Calls PATCH /api/users/:id."
+        description="Update your password. We recommend using a unique, strong password."
       >
         <Card>
           <CardContent className="p-6">
@@ -574,6 +648,7 @@ export function ProfileTab({ role }: Props) {
 
               <div className="flex items-center justify-between pt-1 border-t border-border">
                 {securitySaved && <SavedBanner />}
+                {securityError && <ErrorBanner message={securityError} />}
                 <Button
                   type="submit"
                   size="sm"

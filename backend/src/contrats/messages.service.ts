@@ -15,8 +15,9 @@ export class MessagesService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  findAll(): Promise<Message[]> {
-    return this.repo.find();
+  findAll(filters?: { contratId?: string }): Promise<Message[]> {
+    if (!filters?.contratId) return this.repo.find();
+    return this.repo.find({ where: { contratId: filters.contratId } });
   }
 
   async findOne(id: string): Promise<Message> {

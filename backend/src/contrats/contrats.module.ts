@@ -9,11 +9,12 @@ import { LivrablesService } from './livrables.service';
 import { LivrablesController } from './livrables.controller';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
+import { MessagesGateway } from './messages.gateway';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Contrat, Livrable, Message])],
   controllers: [ContratsController, LivrablesController, MessagesController],
-  providers: [ContratsService, LivrablesService, MessagesService],
+  providers: [ContratsService, LivrablesService, MessagesService, MessagesGateway],
   exports: [ContratsService, LivrablesService, MessagesService],
 })
 export class ContratsModule {}

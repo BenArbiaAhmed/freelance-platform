@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -23,8 +24,8 @@ export class MessagesController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('contratId') contratId?: string) {
+    return this.service.findAll({ contratId });
   }
 
   @Get(':id')

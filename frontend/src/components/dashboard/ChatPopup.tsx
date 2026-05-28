@@ -1,61 +1,82 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MessageSquare, X, Send, ArrowLeft, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { io, type Socket } from 'socket.io-client'
+import { api } from '@/lib/api'
+import { useContratsStore } from '@/store/contrats'
+import { useAuthStore } from '@/store/auth'
 
 // Shapes mirror backend Message entity (contenu, expediteur, lu, dateEnvoi)
 interface ChatMessage {
   id: string
   contenu: string
-  expediteur: 'me' | 'them'  // simplified; real app uses expediteurId vs current user
+  expediteur: 'me' | 'them'
+  expediteurId: string
   lu: boolean
   dateEnvoi: string
 }
 
 interface Conversation {
-  id: string               // contratId
+  id: string
   missionTitre: string
   counterpart: { nom: string; photo: string }
-  messages: ChatMessage[]
   online: boolean
 }
 
-// Mock data matching signed contracts from MY_CONTRATS
-const CONVERSATIONS: Conversation[] = [
-  {
-    id: 'k1',
-    missionTitre: 'UX/UI Designer for Mobile App Redesign',
-    counterpart: { nom: 'Maria Chen', photo: 'https://i.pravatar.cc/40?img=9' },
-    online: true,
-    messages: [
-      { id: 'm1', contenu: 'Hi Aisha! Welcome aboard. Looking forward to working with you.', expediteur: 'them', lu: true, dateEnvoi: '10:02' },
-      { id: 'm2', contenu: 'Thanks Maria! Excited to get started. Should I begin with the design system or the app flows?', expediteur: 'me', lu: true, dateEnvoi: '10:05' },
-      { id: 'm3', contenu: 'Let\'s start with the design system — it will unblock everything else.', expediteur: 'them', lu: true, dateEnvoi: '10:08' },
-      { id: 'm4', contenu: 'Perfect. I\'ll share the first draft of the colour tokens and typography by tomorrow morning.', expediteur: 'me', lu: false, dateEnvoi: '10:10' },
-    ],
-  },
-  {
-    id: 'k2',
-    missionTitre: 'GraphQL API Integration Specialist',
-    counterpart: { nom: 'Rayan Mansouri', photo: 'https://i.pravatar.cc/40?img=15' },
-    online: false,
-    messages: [
-      { id: 'm5', contenu: 'Great work on the Apollo setup. The subscription part is working perfectly.', expediteur: 'them', lu: true, dateEnvoi: 'Yesterday' },
-      { id: 'm6', contenu: 'Happy to hear it! I\'ll push the optimistic UI updates today.', expediteur: 'me', lu: true, dateEnvoi: 'Yesterday' },
-    ],
-  },
-]
+interface BackendMessage {
+  id: string
+  contenu: string
+  expediteurId: string
+  lu: boolean
+  dateEnvoi: string
+  contratId: string
+}
 
 export function ChatPopup() {
   const [open, setOpen] = useState(false)
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
-  const [conversations, setConversations] = useState(CONVERSATIONS)
+  const [messagesByContract, setMessagesByContract] = useState<Record<string, ChatMessage[]>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const socketRef = useRef<Socket | null>(null)
+  const activeConvRef = useRef<string | null>(null)
+
+  const userId = useAuthStore((s) => s.user?.id)
+  const role = useAuthStore((s) => s.user?.role)
+  const { contrats, fetchContrats } = useContratsStore()
+
+  useEffect(() => {
+    if (!role) return
+    if (role === 'client') {
+      const clientId = useAuthStore.getState().user?.clientProfile?.id
+      if (clientId) fetchContrats({ clientId })
+    } else {
+      const freelanceId = useAuthStore.getState().user?.freelanceProfile?.id
+      if (freelanceId) fetchContrats({ freelanceId })
+    }
+  }, [role, fetchContrats])
+
+  const conversations = useMemo<Conversation[]>(() => {
+    return contrats.map((c) => {
+      const name = role === 'client'
+        ? c.freelanceNom
+        : `${c.clientNom}${c.clientEntreprise ? ` · ${c.clientEntreprise}` : ''}`
+      return {
+        id: c.id,
+        missionTitre: c.missionTitre,
+        counterpart: {
+          nom: name,
+          photo: `https://i.pravatar.cc/40?u=${encodeURIComponent(name)}`,
+        },
+        online: true,
+      }
+    })
+  }, [contrats, role])
 
   const activeConv = conversations.find((c) => c.id === activeConvId) ?? null
-  const totalUnread = conversations.reduce(
-    (acc, c) => acc + c.messages.filter((m) => m.expediteur === 'them' && !m.lu).length, 0
+  const totalUnread = Object.values(messagesByContract).reduce(
+    (acc, list) => acc + list.filter((m) => m.expediteur === 'them' && !m.lu).length, 0
   )
 
   // Auto-scroll to latest message
@@ -63,7 +84,45 @@ export function ChatPopup() {
     if (open && activeConvId) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [open, activeConvId, conversations])
+  }, [open, activeConvId, messagesByContract])
+
+  useEffect(() => {
+    activeConvRef.current = activeConvId
+  }, [activeConvId])
+
+  useEffect(() => {
+    const socket = io('/messages', { path: '/socket.io' })
+    socketRef.current = socket
+
+    socket.on('message', (msg: BackendMessage) => {
+      setMessagesByContract((prev) => {
+        const list = prev[msg.contratId] ?? []
+        const mapped: ChatMessage = {
+          id: msg.id,
+          contenu: msg.contenu,
+          expediteurId: msg.expediteurId,
+          expediteur: msg.expediteurId === userId ? 'me' : 'them',
+          lu: msg.contratId === activeConvRef.current,
+          dateEnvoi: new Date(msg.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }
+        return { ...prev, [msg.contratId]: [...list, mapped] }
+      })
+    })
+
+    return () => {
+      socket.disconnect()
+      socketRef.current = null
+    }
+  }, [userId])
+
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!socket) return
+    if (activeConvId) socket.emit('join', { contratId: activeConvId })
+    return () => {
+      if (activeConvId) socket.emit('leave', { contratId: activeConvId })
+    }
+  }, [activeConvId])
 
   // Close on outside click
   useEffect(() => {
@@ -76,35 +135,33 @@ export function ChatPopup() {
 
   function sendMessage(convId: string) {
     const text = (drafts[convId] ?? '').trim()
-    if (!text) return
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id !== convId ? c : {
-          ...c,
-          messages: [...c.messages, {
-            id: `m-${Date.now()}`,
-            contenu: text,
-            expediteur: 'me',
-            lu: false,
-            dateEnvoi: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          }],
-        }
-      )
-    )
+    if (!text || !userId) return
+    socketRef.current?.emit('send', { contratId: convId, expediteurId: userId, contenu: text })
     setDrafts((d) => ({ ...d, [convId]: '' }))
   }
 
-  function openConversation(id: string) {
+  async function openConversation(id: string) {
     setActiveConvId(id)
-    // Mark all incoming messages as read
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id !== id ? c : {
-          ...c,
-          messages: c.messages.map((m) => ({ ...m, lu: true })),
-        }
-      )
-    )
+
+    if (!messagesByContract[id]) {
+      const { data } = await api.get<BackendMessage[]>('/messages', { params: { contratId: id } })
+      setMessagesByContract((prev) => ({
+        ...prev,
+        [id]: data.map((m) => ({
+          id: m.id,
+          contenu: m.contenu,
+          expediteurId: m.expediteurId,
+          expediteur: m.expediteurId === userId ? 'me' : 'them',
+          lu: true,
+          dateEnvoi: new Date(m.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        })),
+      }))
+    } else {
+      setMessagesByContract((prev) => ({
+        ...prev,
+        [id]: (prev[id] ?? []).map((m) => (m.expediteur === 'them' ? { ...m, lu: true } : m)),
+      }))
+    }
   }
 
   return (
@@ -142,7 +199,7 @@ export function ChatPopup() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 max-h-72">
-                {activeConv.messages.map((m) => (
+                {(messagesByContract[activeConv.id] ?? []).map((m) => (
                   <div key={m.id} className={cn('flex', m.expediteur === 'me' ? 'justify-end' : 'justify-start')}>
                     {m.expediteur === 'them' && (
                       <img
@@ -199,8 +256,9 @@ export function ChatPopup() {
               </div>
               <ul className="divide-y divide-border">
                 {conversations.map((c) => {
-                  const last = c.messages[c.messages.length - 1]
-                  const unread = c.messages.filter((m) => m.expediteur === 'them' && !m.lu).length
+                  const list = messagesByContract[c.id] ?? []
+                  const last = list[list.length - 1]
+                  const unread = list.filter((m) => m.expediteur === 'them' && !m.lu).length
                   return (
                     <li
                       key={c.id}
@@ -215,7 +273,7 @@ export function ChatPopup() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground truncate">{c.counterpart.nom}</p>
-                        <p className="text-xs text-muted-foreground truncate">{last?.contenu}</p>
+                        <p className="text-xs text-muted-foreground truncate">{last?.contenu ?? 'No messages yet'}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <span className="text-[10px] text-muted-foreground">{last?.dateEnvoi}</span>

@@ -3,11 +3,16 @@ import { Calendar, Users, ArrowRight, Search, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { MissionDetail } from '@/components/dashboard/MissionDetail'
 import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
 import { type Mission } from '@/lib/mock-data'
-import { useMissionsStore } from '@/store/missions'
+import {
+  useMissionsStore,
+  type MissionSortField,
+  type SortDirection,
+} from '@/store/missions'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -16,29 +21,38 @@ interface Props {
   role: 'freelance' | 'client'
 }
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'DATE_CREATION:DESC', label: 'Newest' },
+  { value: 'BUDGET:DESC', label: 'Budget: high to low' },
+  { value: 'BUDGET:ASC', label: 'Budget: low to high' },
+  { value: 'DEADLINE:ASC', label: 'Deadline: soonest' },
+  { value: 'TITRE:ASC', label: 'Title: A–Z' },
+]
+
 export function MissionsTab({ selectedId, onSelect, role }: Props) {
-  const { missions, loading, error, fetchMissions } = useMissionsStore()
+  const { missions, allSkills, loading, error, fetchMissions } = useMissionsStore()
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
+  const [sort, setSort] = useState('DATE_CREATION:DESC')
 
+  // Push every filter/sort change to the GraphQL search query, debounced so
+  // typing in the search box doesn't fire a request per keystroke.
   useEffect(() => {
-    fetchMissions()
-  }, [fetchMissions])
-
-  const ALL_SKILLS = Array.from(new Set(missions.flatMap((m) => m.competencesRequises)))
+    const [sortField, sortDirection] = sort.split(':') as [MissionSortField, SortDirection]
+    const timer = setTimeout(() => {
+      fetchMissions({
+        keyword: search || undefined,
+        skills: selectedSkill ? [selectedSkill] : undefined,
+        sortField,
+        sortDirection,
+      })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search, selectedSkill, sort, fetchMissions])
 
   if (selectedId) {
     return <MissionDetail missionId={selectedId} onBack={() => onSelect(null)} />
   }
-
-  const filtered = missions.filter((m) => {
-    const matchesSearch =
-      search === '' ||
-      m.titre.toLowerCase().includes(search.toLowerCase()) ||
-      m.competencesRequises.some((s) => s.toLowerCase().includes(search.toLowerCase()))
-    const matchesSkill = !selectedSkill || m.competencesRequises.includes(selectedSkill)
-    return matchesSearch && matchesSkill
-  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,11 +62,21 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Search missions or skills…"
+            placeholder="Search missions…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Select
+          className="sm:w-48"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Sort missions"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedSkill(null)}
@@ -65,7 +89,7 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
           >
             All
           </button>
-          {ALL_SKILLS.map((skill) => (
+          {allSkills.map((skill) => (
             <button
               key={skill}
               onClick={() => setSelectedSkill(selectedSkill === skill ? null : skill)}
@@ -104,10 +128,10 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground">{filtered.length} mission{filtered.length !== 1 ? 's' : ''} found</p>
+      <p className="text-sm text-muted-foreground">{missions.length} mission{missions.length !== 1 ? 's' : ''} found</p>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {filtered.map((m) => (
+        {missions.map((m) => (
           <MissionCard key={m.id} mission={m} onSelect={onSelect} />
         ))}
       </div>
@@ -118,7 +142,7 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && (
+      {!loading && missions.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-sm">No missions match your filters.</p>
         </div>

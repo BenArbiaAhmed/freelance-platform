@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ContratsService } from './contrats.service';
 import { CreateContratDto } from './dto/create-contrat.dto';
@@ -23,8 +24,11 @@ export class ContratsController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(
+    @Query('clientId') clientId?: string,
+    @Query('freelanceId') freelanceId?: string,
+  ) {
+    return this.service.findAll({ clientId, freelanceId });
   }
 
   @Get(':id')

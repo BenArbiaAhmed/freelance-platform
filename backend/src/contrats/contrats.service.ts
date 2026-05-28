@@ -15,8 +15,24 @@ export class ContratsService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  findAll(): Promise<Contrat[]> {
-    return this.repo.find();
+  findAll(filters?: { clientId?: string; freelanceId?: string }): Promise<Contrat[]> {
+    const qb = this.repo
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.mission', 'mission')
+      .leftJoinAndSelect('c.client', 'client')
+      .leftJoinAndSelect('client.user', 'clientUser')
+      .leftJoinAndSelect('c.freelance', 'freelance')
+      .leftJoinAndSelect('freelance.user', 'freelanceUser');
+
+    if (filters?.clientId) {
+      qb.andWhere('c.clientId = :clientId', { clientId: filters.clientId });
+    }
+
+    if (filters?.freelanceId) {
+      qb.andWhere('c.freelanceId = :freelanceId', { freelanceId: filters.freelanceId });
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<Contrat> {

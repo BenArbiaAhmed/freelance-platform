@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Sse,
   MessageEvent,
 } from '@nestjs/common';
@@ -26,8 +27,11 @@ export class CandidaturesController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(
+    @Query('freelanceId') freelanceId?: string,
+    @Query('clientId') clientId?: string,
+  ) {
+    return this.service.findAll({ freelanceId, clientId });
   }
 
   @Get(':id')
@@ -41,6 +45,16 @@ export class CandidaturesController {
     @Body() dto: UpdateCandidatureDto,
   ) {
     return this.service.update(id, dto);
+  }
+
+  @Patch(':id/accept')
+  accept(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.service.accept(id);
+  }
+
+  @Patch(':id/reject')
+  reject(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.service.reject(id);
   }
 
   @Sse('status/stream')

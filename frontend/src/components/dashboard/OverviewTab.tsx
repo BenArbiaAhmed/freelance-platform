@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { Briefcase, BookOpen, FileText, DollarSign, TrendingUp, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { MY_CANDIDATURES, MY_CONTRATS } from '@/lib/mock-data'
 import { useMissionsStore } from '@/store/missions'
+import { useAuthStore } from '@/store/auth'
+import { useCandidaturesStore } from '@/store/candidatures'
+import { useContratsStore } from '@/store/contrats'
 import type { DashTab } from '@/components/dashboard/Sidebar'
 
 const statusColors: Record<string, string> = {
@@ -10,6 +12,8 @@ const statusColors: Record<string, string> = {
   accepted: 'bg-emerald-50 text-emerald-700',
   rejected: 'bg-red-50 text-red-600',
   signed: 'bg-sky-50 text-sky-700',
+  active: 'bg-emerald-50 text-emerald-700',
+  draft: 'bg-gray-100 text-gray-500',
   completed: 'bg-violet-50 text-violet-700',
   cancelled: 'bg-gray-100 text-gray-500',
 }
@@ -22,23 +26,40 @@ interface Props {
 
 export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
   const { missions, fetchMissions } = useMissionsStore()
+  const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
+  const clientId = useAuthStore((s) => s.user?.clientProfile?.id)
+
+  const { candidatures, fetchCandidatures, received, fetchReceived } = useCandidaturesStore()
+  const { contrats, fetchContrats } = useContratsStore()
 
   useEffect(() => {
     fetchMissions()
   }, [fetchMissions])
 
+  useEffect(() => {
+    if (role === 'freelance' && freelanceId) {
+      fetchCandidatures(freelanceId)
+      fetchContrats({ freelanceId })
+    } else if (role === 'client' && clientId) {
+      fetchReceived(clientId)
+      fetchContrats({ clientId })
+    }
+  }, [role, freelanceId, clientId, fetchCandidatures, fetchReceived, fetchContrats])
+
+  const activeContracts = contrats.filter((c) => c.statut === 'signed').length
+
   const stats = role === 'freelance'
     ? [
-        { label: 'Open Missions', value: missions.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '+4 this week', tab: 'missions' as DashTab },
-        { label: 'My Applications', value: MY_CANDIDATURES.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${MY_CANDIDATURES.filter(c => c.statut === 'pending').length} pending`, tab: 'applications' as DashTab },
-        { label: 'Active Contracts', value: MY_CONTRATS.filter(c => c.statut === 'signed').length, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
-        { label: 'Total Earned', value: '$4,350', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$1,750 this month', tab: null },
+        { label: 'Open Missions', value: missions.filter(m => m.statut === 'active').length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: 'Browse all', tab: 'missions' as DashTab },
+        { label: 'My Applications', value: candidatures.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${candidatures.filter(c => c.statut === 'pending').length} pending`, tab: 'applications' as DashTab },
+        { label: 'Active Contracts', value: activeContracts, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
+        { label: 'Contracts', value: contrats.length, icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: 'Total signed', tab: 'contracts' as DashTab },
       ]
     : [
-        { label: 'My Missions', value: 3, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: '2 active', tab: 'missions' as DashTab },
-        { label: 'Candidatures Received', value: 38, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: '12 unreviewed', tab: 'applications' as DashTab },
-        { label: 'Active Contracts', value: 2, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
-        { label: 'Total Spent', value: '$9,100', icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: '+$3,200 this month', tab: null },
+        { label: 'My Missions', value: missions.length, icon: Briefcase, color: 'bg-violet-50 text-violet-600', delta: `${missions.filter(m => m.statut === 'active').length} active`, tab: 'missions' as DashTab },
+        { label: 'Applications Received', value: received.length, icon: BookOpen, color: 'bg-sky-50 text-sky-600', delta: `${received.filter(a => a.statut === 'pending').length} pending`, tab: 'applications' as DashTab },
+        { label: 'Active Contracts', value: activeContracts, icon: FileText, color: 'bg-emerald-50 text-emerald-600', delta: 'In progress', tab: 'contracts' as DashTab },
+        { label: 'Contracts', value: contrats.length, icon: DollarSign, color: 'bg-amber-50 text-amber-600', delta: 'Total signed', tab: 'contracts' as DashTab },
       ]
 
   return (
@@ -106,12 +127,12 @@ export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
           </CardContent>
         </Card>
 
-        {/* My activity */}
+        {/* Activity panel */}
         <Card>
           <CardContent className="p-0">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-sm font-semibold text-foreground">
-                {role === 'freelance' ? 'My Applications' : 'Recent Candidatures'}
+                {role === 'freelance' ? 'My Applications' : 'Recent Applications'}
               </h2>
               <button
                 onClick={() => onNavigate('applications')}
@@ -121,21 +142,38 @@ export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
               </button>
             </div>
             <ul className="divide-y divide-border">
-              {MY_CANDIDATURES.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary shrink-0">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{c.mission.titre}</p>
-                    <p className="text-xs text-muted-foreground">Proposed: ${c.tarifPropose.toLocaleString()}</p>
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[c.statut] ?? ''}`}>
-                    {c.statut}
-                  </span>
-                </li>
-              ))}
+              {role === 'freelance'
+                ? candidatures.slice(0, 5).map((c) => (
+                    <li key={c.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary shrink-0">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{c.mission.titre}</p>
+                        <p className="text-xs text-muted-foreground">Proposed: ${c.tarifPropose.toLocaleString()}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[c.statut] ?? ''}`}>
+                        {c.statut}
+                      </span>
+                    </li>
+                  ))
+                : received.slice(0, 5).map((a) => (
+                    <li key={a.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
+                      <img src={a.freelance.photo} alt={a.freelance.nom} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{a.freelance.nom}</p>
+                        <p className="text-xs text-muted-foreground truncate">{a.mission.titre}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[a.statut] ?? ''}`}>
+                        {a.statut}
+                      </span>
+                    </li>
+                  ))}
             </ul>
+            {((role === 'freelance' && candidatures.length === 0) ||
+              (role === 'client' && received.length === 0)) && (
+              <p className="px-5 py-6 text-sm text-muted-foreground text-center">No applications yet.</p>
+            )}
           </CardContent>
         </Card>
       </div>

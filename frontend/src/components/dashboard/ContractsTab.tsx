@@ -1,72 +1,121 @@
+import { useEffect } from 'react'
 import { FileSignature, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MY_CONTRATS, type ContratStatut } from '@/lib/mock-data'
+import { useAuthStore } from '@/store/auth'
+import { useContratsStore } from '@/store/contrats'
 import { cn } from '@/lib/utils'
 
+type ContratStatut = 'draft' | 'signed' | 'completed' | 'cancelled'
+
 const statusConfig: Record<ContratStatut, { label: string; icon: React.ElementType; className: string }> = {
-  draft: { label: 'Draft', icon: Clock, className: 'bg-gray-100 text-gray-500' },
+  draft: { label: 'Awaiting signature', icon: Clock, className: 'bg-gray-100 text-gray-500' },
   signed: { label: 'Active', icon: FileSignature, className: 'bg-sky-50 text-sky-700' },
   completed: { label: 'Completed', icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-700' },
   cancelled: { label: 'Cancelled', icon: XCircle, className: 'bg-red-50 text-red-600' },
 }
 
-export function ContractsTab() {
+interface Props {
+  role: 'freelance' | 'client'
+}
+
+export function ContractsTab({ role }: Props) {
+  const clientId = useAuthStore((s) => s.user?.clientProfile?.id)
+  const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
+  const { contrats, loading, error, fetchContrats } = useContratsStore()
+
+  const profileId = role === 'client' ? clientId : freelanceId
+
+  useEffect(() => {
+    if (!profileId) return
+    fetchContrats(role === 'client' ? { clientId: profileId } : { freelanceId: profileId })
+  }, [role, profileId, fetchContrats])
+
+  if (!profileId) {
+    return (
+      <p className="text-sm text-muted-foreground py-8 text-center">
+        No profile found for contracts.
+      </p>
+    )
+  }
+
+  if (loading && contrats.length === 0) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">Loading contracts…</p>
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{MY_CONTRATS.length} contract{MY_CONTRATS.length !== 1 ? 's' : ''}</p>
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      <div className="flex flex-col gap-3">
-        {MY_CONTRATS.map((c) => {
-          const cfg = statusConfig[c.statut]
-          const Icon = cfg.icon
+      <p className="text-sm text-muted-foreground">
+        {contrats.length} contract{contrats.length !== 1 ? 's' : ''}
+      </p>
 
-          return (
-            <Card key={c.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  {/* Status icon */}
-                  <div className={cn('flex items-center justify-center w-10 h-10 rounded-xl shrink-0', cfg.className)}>
-                    <Icon className="w-5 h-5" />
-                  </div>
+      {contrats.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-12 text-center">
+          {role === 'client'
+            ? 'No contracts yet. Accept an application to create one.'
+            : 'No contracts yet. They appear once a client accepts your application.'}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {contrats.map((c) => {
+            const cfg = statusConfig[c.statut]
+            const Icon = cfg.icon
+            const counterparty =
+              role === 'client'
+                ? c.freelanceNom
+                : `${c.clientNom}${c.clientEntreprise ? ` · ${c.clientEntreprise}` : ''}`
 
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{c.mission.titre}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      with {c.client.nom} · {c.client.entreprise}
-                    </p>
-                  </div>
-
-                  {/* Meta */}
-                  <div className="flex items-center gap-6 shrink-0">
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Amount</p>
-                      <p className="text-sm font-semibold text-foreground">${c.montant.toLocaleString()}</p>
+            return (
+              <Card key={c.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    {/* Status icon */}
+                    <div className={cn('flex items-center justify-center w-10 h-10 rounded-xl shrink-0', cfg.className)}>
+                      <Icon className="w-5 h-5" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Started</p>
-                      <p className="text-sm text-foreground">
-                        {new Date(c.dateCreation).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
-                      </p>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{c.missionTitre}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">with {counterparty}</p>
+                    </div>
+
+                    {/* Meta */}
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Amount</p>
+                        <p className="text-sm font-semibold text-foreground">${c.montant.toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Started</p>
+                        <p className="text-sm text-foreground">
+                          {new Date(c.dateCreation).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Status + action */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', cfg.className)}>
+                        {cfg.label}
+                      </span>
+                      {c.statut === 'signed' && (
+                        <Button size="sm" variant="outline">Open chat</Button>
+                      )}
                     </div>
                   </div>
-
-                  {/* Status + action */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', cfg.className)}>
-                      {cfg.label}
-                    </span>
-                    {c.statut === 'signed' && (
-                      <Button size="sm" variant="outline">Open chat</Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

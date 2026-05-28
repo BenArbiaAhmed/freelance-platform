@@ -12,11 +12,9 @@ import { useAuthStore } from '@/store/auth'
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user)
+  const role: 'freelance' | 'client' = user?.role === 'client' ? 'client' : 'freelance'
   const [tab, setTab] = useState<DashTab>('overview')
   const [collapsed, setCollapsed] = useState(false)
-  const [role, setRole] = useState<'freelance' | 'client'>(
-    user?.role === 'client' ? 'client' : 'freelance',
-  )
 
   // Detail selection — cleared when navigating to a different tab
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null)
@@ -33,6 +31,11 @@ export default function DashboardPage() {
     setTab('missions')
   }
 
+  function openFreelancer(id: string) {
+    setSelectedFreelancerId(id)
+    setTab('freelancers')
+  }
+
   return (
     <div className="flex h-screen bg-secondary/30 overflow-hidden">
       <Sidebar
@@ -44,11 +47,7 @@ export default function DashboardPage() {
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <DashboardHeader
-          tab={tab}
-          role={role}
-          onRoleToggle={() => setRole((r) => (r === 'freelance' ? 'client' : 'freelance'))}
-        />
+        <DashboardHeader tab={tab} role={role} />
 
         <main className="flex-1 overflow-y-auto p-6">
           {tab === 'overview' && (
@@ -71,8 +70,10 @@ export default function DashboardPage() {
               onSelect={setSelectedFreelancerId}
             />
           )}
-          {tab === 'applications' && <ApplicationsTab />}
-          {tab === 'contracts' && <ContractsTab />}
+          {tab === 'applications' && (
+            <ApplicationsTab role={role} onViewFreelancer={openFreelancer} />
+          )}
+          {tab === 'contracts' && <ContractsTab role={role} />}
           {tab === 'profile' && <ProfileTab role={role} />}
         </main>
       </div>

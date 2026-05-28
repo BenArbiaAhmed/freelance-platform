@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useMissionsStore } from '@/store/missions'
 import { useFreelancersStore } from '@/store/freelancers'
 import { useAuthStore } from '@/store/auth'
+import { useCandidaturesStore } from '@/store/candidatures'
 import { api, apiErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +34,7 @@ export function MissionDetail({ missionId, onBack }: Props) {
   const mission = useMissionsStore((s) => s.missions.find((m) => m.id === missionId))
   const { freelancers, fetchFreelancers } = useFreelancersStore()
   const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
+  const fetchCandidatures = useCandidaturesStore((s) => s.fetchCandidatures)
   const [submitted, setSubmitted] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
 
@@ -68,6 +70,7 @@ export function MissionDetail({ missionId, onBack }: Props) {
         tarifPropose: Number(data.tarifPropose),
       })
       setSubmitted(true)
+      fetchCandidatures(freelanceId)
     } catch (err) {
       setApplyError(apiErrorMessage(err, 'Could not submit your application'))
     }

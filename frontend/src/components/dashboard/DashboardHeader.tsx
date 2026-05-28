@@ -1,6 +1,5 @@
 import { Search, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NotificationsPopup } from '@/components/dashboard/NotificationsPopup'
 import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
@@ -17,10 +16,9 @@ const tabTitles: Record<string, string> = {
 interface Props {
   tab: string
   role: 'freelance' | 'client'
-  onRoleToggle: () => void
 }
 
-export function DashboardHeader({ tab, role, onRoleToggle }: Props) {
+export function DashboardHeader({ tab, role }: Props) {
   return (
     <header className="h-16 border-b border-border bg-white flex items-center justify-between px-6 gap-4 shrink-0">
       <h1 className="text-base font-semibold text-foreground">{tabTitles[tab]}</h1>
@@ -41,18 +39,6 @@ export function DashboardHeader({ tab, role, onRoleToggle }: Props) {
             </Button>
           </CreateMissionModal>
         )}
-
-        {/* Role toggle — demo only */}
-        <button
-          onClick={onRoleToggle}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:bg-secondary transition-colors"
-          title="Toggle role (demo)"
-        >
-          Viewing as:
-          <Badge variant={role === 'freelance' ? 'default' : 'secondary'} className="text-xs py-0">
-            {role === 'freelance' ? 'Freelancer' : 'Client'}
-          </Badge>
-        </button>
 
         {/* Notifications */}
         <NotificationsPopup />

@@ -3,10 +3,15 @@ import { Star, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { FreelancerDetail } from '@/components/dashboard/FreelancerDetail'
 import { type FreelanceProfile } from '@/lib/mock-data'
-import { useFreelancersStore } from '@/store/freelancers'
+import {
+  useFreelancersStore,
+  type FreelancerSortField,
+  type SortDirection,
+} from '@/store/freelancers'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -14,31 +19,39 @@ interface Props {
   onSelect: (id: string | null) => void
 }
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'RATING:DESC', label: 'Top rated' },
+  { value: 'TARIF_JOURNALIER:ASC', label: 'Rate: low to high' },
+  { value: 'TARIF_JOURNALIER:DESC', label: 'Rate: high to low' },
+  { value: 'NOM:ASC', label: 'Name: A–Z' },
+]
+
 export function FreelancersTab({ selectedId, onSelect }: Props) {
-  const { freelancers, loading, error, fetchFreelancers } = useFreelancersStore()
+  const { freelancers, allSkills, loading, error, fetchFreelancers } = useFreelancersStore()
   const [search, setSearch] = useState('')
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null)
   const [availableOnly, setAvailableOnly] = useState(false)
+  const [sort, setSort] = useState('RATING:DESC')
 
+  // Push every filter/sort change to the GraphQL search query, debounced so
+  // typing in the search box doesn't fire a request per keystroke.
   useEffect(() => {
-    fetchFreelancers()
-  }, [fetchFreelancers])
-
-  const ALL_SKILLS = Array.from(new Set(freelancers.flatMap((f) => f.competences.map((c) => c.nom))))
+    const [sortField, sortDirection] = sort.split(':') as [FreelancerSortField, SortDirection]
+    const timer = setTimeout(() => {
+      fetchFreelancers({
+        keyword: search || undefined,
+        skills: selectedSkill ? [selectedSkill] : undefined,
+        disponible: availableOnly || undefined,
+        sortField,
+        sortDirection,
+      })
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search, selectedSkill, availableOnly, sort, fetchFreelancers])
 
   if (selectedId) {
     return <FreelancerDetail freelancerId={selectedId} onBack={() => onSelect(null)} />
   }
-
-  const filtered = freelancers.filter((f) => {
-    const matchesSearch =
-      search === '' ||
-      f.nom.toLowerCase().includes(search.toLowerCase()) ||
-      f.competences.some((c) => c.nom.toLowerCase().includes(search.toLowerCase()))
-    const matchesSkill = !selectedSkill || f.competences.some((c) => c.nom === selectedSkill)
-    const matchesAvail = !availableOnly || f.disponible
-    return matchesSearch && matchesSkill && matchesAvail
-  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,11 +61,21 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Search freelancers or skills…"
+            placeholder="Search by name or bio…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Select
+          className="sm:w-48"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Sort freelancers"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setAvailableOnly((v) => !v)}
@@ -65,7 +88,7 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
           >
             Available now
           </button>
-          {ALL_SKILLS.map((skill) => (
+          {allSkills.map((skill) => (
             <button
               key={skill}
               onClick={() => setSelectedSkill(selectedSkill === skill ? null : skill)}
@@ -88,10 +111,10 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
         </div>
       )}
 
-      <p className="text-sm text-muted-foreground">{filtered.length} freelancer{filtered.length !== 1 ? 's' : ''} found</p>
+      <p className="text-sm text-muted-foreground">{freelancers.length} freelancer{freelancers.length !== 1 ? 's' : ''} found</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((f) => (
+        {freelancers.map((f) => (
           <FreelancerCard key={f.id} freelancer={f} onSelect={onSelect} />
         ))}
       </div>
@@ -102,7 +125,7 @@ export function FreelancersTab({ selectedId, onSelect }: Props) {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && (
+      {!loading && freelancers.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="text-sm">No freelancers match your filters.</p>
         </div>

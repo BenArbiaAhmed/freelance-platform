@@ -26,24 +26,21 @@ export class CandidaturesService {
     return this.repo.save(this.repo.create(dto));
   }
 
-  findAll(filters?: { freelanceId?: string; clientId?: string }): Promise<Candidature[]> {
-    const qb = this.repo
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.mission', 'mission')
-      .leftJoinAndSelect('c.freelance', 'freelance')
-      .leftJoinAndSelect('freelance.user', 'user')
-      .leftJoinAndSelect('freelance.competences', 'freelanceCompetences')
-      .leftJoinAndSelect('freelanceCompetences.competence', 'competence');
-
-    if (filters?.freelanceId) {
-      qb.andWhere('c.freelanceId = :freelanceId', { freelanceId: filters.freelanceId });
-    }
-
-    if (filters?.clientId) {
-      qb.andWhere('mission.clientId = :clientId', { clientId: filters.clientId });
-    }
-
-    return qb.getMany();
+  findAll(
+    filter: { freelanceId?: string; clientId?: string } = {},
+  ): Promise<Candidature[]> {
+    const { freelanceId, clientId } = filter;
+    return this.repo.find({
+      where: {
+        ...(freelanceId ? { freelanceId } : {}),
+        ...(clientId ? { mission: { clientId } } : {}),
+      },
+      relations: {
+        mission: true,
+        freelance: { user: true, competences: { competence: true } },
+      },
+      order: { dateCreation: 'DESC' },
+    });
   }
 
   async findOne(id: string): Promise<Candidature> {

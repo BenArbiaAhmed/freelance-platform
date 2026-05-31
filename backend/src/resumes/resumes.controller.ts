@@ -2,7 +2,13 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -87,5 +93,23 @@ export class ResumesController {
       throw new BadRequestException('Resume file is required');
     }
     return this.service.create(file, dto, userId);
+  }
+
+  @Get()
+  list(
+    @Query('freelanceProfileId', new ParseUUIDPipe())
+    freelanceProfileId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.service.listForProfile(freelanceProfileId, userId);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    await this.service.remove(id, userId);
   }
 }

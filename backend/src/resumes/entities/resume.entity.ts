@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   Index,
 } from 'typeorm';
-import { FreelanceProfile } from './freelance-profile.entity';
+import { FreelanceProfile } from '../../users/entities/freelance-profile.entity';
 
 @Entity('resumes')
 export class Resume {

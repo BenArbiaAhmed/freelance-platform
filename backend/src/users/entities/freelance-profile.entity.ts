@@ -10,7 +10,7 @@ import {
 import { User } from './user.entity';
 import { FreelanceCompetence } from '../../competences/entities/freelance-competence.entity';
 import { Candidature } from '../../candidatures/entities/candidature.entity';
-import { Resume } from './resume.entity';
+import { Resume } from '../../resumes/entities/resume.entity';
 
 @Entity('freelance_profiles')
 export class FreelanceProfile {

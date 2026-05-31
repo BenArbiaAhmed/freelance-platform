@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Resume } from '../users/entities/resume.entity';
+import { Resume } from './entities/resume.entity';
 import { FreelanceProfile } from '../users/entities/freelance-profile.entity';
 import { ResumesService } from './resumes.service';
 import { ResumesController } from './resumes.controller';

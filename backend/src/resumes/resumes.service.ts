@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Resume } from '../users/entities/resume.entity';
+import { Resume } from './entities/resume.entity';
 import { FreelanceProfile } from '../users/entities/freelance-profile.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
 

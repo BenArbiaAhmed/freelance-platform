@@ -125,6 +125,10 @@ export function ProfileTab({ role }: Props) {
   const [roleError, setRoleError] = useState<string | null>(null)
   const [securitySaved, setSecuritySaved] = useState(false)
   const [securityError, setSecurityError] = useState<string | null>(null)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeUploading, setResumeUploading] = useState(false)
+  const [resumeSaved, setResumeSaved] = useState(false)
+  const [resumeError, setResumeError] = useState<string | null>(null)
 
   // ── Skills state (freelance only) ──
   const [skills, setSkills] = useState<Skill[]>([])
@@ -206,6 +210,30 @@ export function ProfileTab({ role }: Props) {
       setRoleSaved(true)
     } catch (err) {
       setRoleError(apiErrorMessage(err, 'Could not save freelance profile'))
+    }
+  }
+
+  async function onResumeUpload(event: React.FormEvent) {
+    event.preventDefault()
+    setResumeError(null)
+    setResumeSaved(false)
+    if (!resumeFile || !user?.freelanceProfile?.id) return
+
+    const body = new FormData()
+    body.append('file', resumeFile)
+    body.append('freelanceProfileId', user.freelanceProfile.id)
+
+    try {
+      setResumeUploading(true)
+      await api.post('/resumes', body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setResumeSaved(true)
+      setResumeFile(null)
+    } catch (err) {
+      setResumeError(apiErrorMessage(err, 'Could not upload resume'))
+    } finally {
+      setResumeUploading(false)
     }
   }
 
@@ -442,6 +470,46 @@ export function ProfileTab({ role }: Props) {
                       onClick={() => setRoleSaved(false)}
                     >
                       {subFreelance ? 'Saving…' : 'Save changes'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Resume upload */}
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={onResumeUpload} className="flex flex-col gap-4" noValidate>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Resume</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Upload your latest resume so clients can review your profile faster.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="resume">Resume file</Label>
+                    <Input
+                      id="resume"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                    />
+                    {resumeFile && (
+                      <p className="text-xs text-muted-foreground">Selected: {resumeFile.name}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    {resumeSaved && <SavedBanner />}
+                    {resumeError && <ErrorBanner message={resumeError} />}
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={resumeUploading || !resumeFile}
+                      className="ml-auto shadow-sm shadow-primary/20"
+                    >
+                      {resumeUploading ? 'Uploading…' : 'Upload resume'}
                     </Button>
                   </div>
                 </form>

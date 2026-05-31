@@ -23,7 +23,7 @@ export class FreelanceProfilesService {
   async findOne(id: string): Promise<FreelanceProfile> {
     const profile = await this.repo.findOne({
       where: { id },
-      relations: { user: true, competences: true },
+      relations: { user: true, competences: true, resumes: true },
     });
     if (!profile)
       throw new NotFoundException(`FreelanceProfile ${id} not found`);

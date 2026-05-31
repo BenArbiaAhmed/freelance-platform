@@ -10,13 +10,16 @@ import {
 import { User } from './user.entity';
 import { FreelanceCompetence } from '../../competences/entities/freelance-competence.entity';
 import { Candidature } from '../../candidatures/entities/candidature.entity';
+import { Resume } from './resume.entity';
 
 @Entity('freelance_profiles')
 export class FreelanceProfile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User, (user) => user.freelanceProfile, { onDelete: 'CASCADE' })
+  @OneToOne(() => User, (user) => user.freelanceProfile, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn()
   user: User;
 
@@ -40,4 +43,7 @@ export class FreelanceProfile {
 
   @OneToMany(() => Candidature, (candidature) => candidature.freelance)
   candidatures: Candidature[];
+
+  @OneToMany(() => Resume, (resume) => resume.freelanceProfile)
+  resumes: Resume[];
 }

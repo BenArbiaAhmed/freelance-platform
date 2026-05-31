@@ -10,6 +10,7 @@ import { unlink } from 'fs/promises';
 import { Resume } from './entities/resume.entity';
 import { FreelanceProfile } from '../users/entities/freelance-profile.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
+import { ResumeEmbeddingService } from './resume-embedding.service';
 
 @Injectable()
 export class ResumesService {
@@ -18,6 +19,7 @@ export class ResumesService {
     private readonly repo: Repository<Resume>,
     @InjectRepository(FreelanceProfile)
     private readonly profileRepo: Repository<FreelanceProfile>,
+    private readonly embeddingService: ResumeEmbeddingService,
   ) {}
 
   async create(
@@ -46,7 +48,12 @@ export class ResumesService {
       size: file.size,
     });
 
-    return this.repo.save(resume);
+    const saved = await this.repo.save(resume);
+    if (file.path) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      void this.embeddingService.embedResume(saved, file.path, file.mimetype);
+    }
+    return saved;
   }
 
   async listForProfile(

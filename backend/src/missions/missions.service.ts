@@ -4,15 +4,20 @@ import { Repository } from 'typeorm';
 import { Mission } from './entities/mission.entity';
 import { CreateMissionDto } from './dto/create-mission.dto';
 import { UpdateMissionDto } from './dto/update-mission.dto';
+import { MissionEmbeddingService } from './mission-embedding.service';
 
 @Injectable()
 export class MissionsService {
   constructor(
     @InjectRepository(Mission) private readonly repo: Repository<Mission>,
+    private readonly embeddingService: MissionEmbeddingService,
   ) {}
 
-  create(dto: CreateMissionDto): Promise<Mission> {
-    return this.repo.save(this.repo.create(dto));
+  async create(dto: CreateMissionDto): Promise<Mission> {
+    const saved = await this.repo.save(this.repo.create(dto));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    void this.embeddingService.embedMission(saved);
+    return saved;
   }
 
   findAll(): Promise<Mission[]> {
@@ -36,6 +41,7 @@ export class MissionsService {
 
   async remove(id: string): Promise<void> {
     const result = await this.repo.delete(id);
-    if (!result.affected) throw new NotFoundException(`Mission ${id} not found`);
+    if (!result.affected)
+      throw new NotFoundException(`Mission ${id} not found`);
   }
 }

@@ -10,7 +10,7 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { MissionStatut } from '../entities/mission.entity';
+import { ExperienceLevel, MissionStatut } from '../entities/mission.entity';
 
 export class CreateMissionDto {
   @IsUUID()
@@ -41,4 +41,21 @@ export class CreateMissionDto {
   @IsArray()
   @IsString({ each: true })
   competencesRequises?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  requiredSkills?: string[];
+
+  @IsOptional()
+  @IsEnum(ExperienceLevel)
+  experienceLevel?: ExperienceLevel;
+
+  @IsOptional()
+  @IsString()
+  responsibilities?: string;
+
+  @IsOptional()
+  @IsString()
+  niceToHave?: string;
 }

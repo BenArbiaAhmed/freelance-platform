@@ -30,6 +30,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { SearchModule } from './search/search.module';
 import { AuthModule } from './auth/auth.module';
 import { ResumesModule } from './resumes/resumes.module';
+import { MatchingModule } from './matching/matching.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { ResumesModule } from './resumes/resumes.module';
     SearchModule,
     AuthModule,
     ResumesModule,
+    MatchingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -26,8 +26,19 @@ const schema = z.object({
     .refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid budget'),
   deadline: z.string().optional(),
   statut: z.enum(['active', 'draft']),
+  experienceLevel: z.enum(['', 'junior', 'mid', 'senior', 'lead']).optional(),
+  responsibilities: z.string().optional(),
+  niceToHave: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
+
+const EXPERIENCE_LEVELS = [
+  { value: '', label: 'Any level' },
+  { value: 'junior', label: 'Junior' },
+  { value: 'mid', label: 'Mid' },
+  { value: 'senior', label: 'Senior' },
+  { value: 'lead', label: 'Lead' },
+] as const
 
 const SKILL_SUGGESTIONS = [
   'React', 'TypeScript', 'NestJS', 'Node.js', 'PostgreSQL', 'GraphQL',
@@ -80,6 +91,12 @@ export function CreateMissionModal({ children }: Props) {
         budget: Number(data.budget),
         statut: data.statut,
         competencesRequises: skills,
+        requiredSkills: skills,
+        ...(data.experienceLevel ? { experienceLevel: data.experienceLevel } : {}),
+        ...(data.responsibilities?.trim()
+          ? { responsibilities: data.responsibilities.trim() }
+          : {}),
+        ...(data.niceToHave?.trim() ? { niceToHave: data.niceToHave.trim() } : {}),
         ...(data.deadline ? { deadline: data.deadline } : {}),
       })
       await fetchMissions()
@@ -152,13 +169,45 @@ export function CreateMissionModal({ children }: Props) {
               </div>
             </div>
 
-            {/* Status */}
+            {/* Status + experience level */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="statut">Publish as</Label>
+                <Select id="statut" {...register('statut')}>
+                  <option value="active">Active — open for applications</option>
+                  <option value="draft">Draft — save for later</option>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="experienceLevel">Experience level</Label>
+                <Select id="experienceLevel" {...register('experienceLevel')}>
+                  {EXPERIENCE_LEVELS.map((l) => (
+                    <option key={l.value} value={l.value}>{l.label}</option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
+            {/* Responsibilities */}
             <div>
-              <Label htmlFor="statut">Publish as</Label>
-              <Select id="statut" {...register('statut')}>
-                <option value="active">Active — open for applications</option>
-                <option value="draft">Draft — save for later</option>
-              </Select>
+              <Label htmlFor="responsibilities">Key responsibilities <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                id="responsibilities"
+                placeholder="What the freelancer will own day to day…"
+                className="min-h-[70px]"
+                {...register('responsibilities')}
+              />
+            </div>
+
+            {/* Nice to have */}
+            <div>
+              <Label htmlFor="niceToHave">Nice to have <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                id="niceToHave"
+                placeholder="Bonus skills or experience that would help…"
+                className="min-h-[60px]"
+                {...register('niceToHave')}
+              />
             </div>
 
             {/* Skills */}

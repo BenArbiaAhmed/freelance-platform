@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useMissionsStore } from '@/store/missions'
 import { useFreelancersStore } from '@/store/freelancers'
 import { useAuthStore } from '@/store/auth'
+import { MatchedFreelancers } from '@/components/dashboard/MatchedFreelancers'
 import { useCandidaturesStore } from '@/store/candidatures'
 import { api, apiErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -30,17 +31,48 @@ interface Props {
   onBack: () => void
 }
 
+interface MissionSections {
+  requiredSkills?: string[] | null
+  experienceLevel?: string | null
+  responsibilities?: string | null
+  niceToHave?: string | null
+}
+
+const EXPERIENCE_LABEL: Record<string, string> = {
+  junior: 'Junior',
+  mid: 'Mid-level',
+  senior: 'Senior',
+  lead: 'Lead',
+}
+
 export function MissionDetail({ missionId, onBack }: Props) {
   const mission = useMissionsStore((s) => s.missions.find((m) => m.id === missionId))
   const { freelancers, fetchFreelancers } = useFreelancersStore()
   const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
+  const isClient = useAuthStore((s) => s.user?.role) === 'client'
   const fetchCandidatures = useCandidaturesStore((s) => s.fetchCandidatures)
   const [submitted, setSubmitted] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
+  const [sections, setSections] = useState<MissionSections | null>(null)
 
   useEffect(() => {
     if (freelancers.length === 0) fetchFreelancers()
   }, [freelancers.length, fetchFreelancers])
+
+  // The structured section fields aren't part of the GraphQL search payload —
+  // fetch the full mission entity to render them.
+  useEffect(() => {
+    let active = true
+    api
+      .get<MissionSections>(`/missions/${missionId}`)
+      .then(({ data }) => {
+        if (active) setSections(data)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [missionId])
 
   const {
     register,
@@ -149,7 +181,14 @@ export function MissionDetail({ missionId, onBack }: Props) {
           {/* Skills */}
           <Card>
             <CardContent className="p-6 flex flex-col gap-3">
-              <h2 className="text-sm font-semibold text-foreground">Required skills</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold text-foreground">Required skills</h2>
+                {sections?.experienceLevel && (
+                  <Badge variant="secondary" className="capitalize">
+                    {EXPERIENCE_LABEL[sections.experienceLevel] ?? sections.experienceLevel}
+                  </Badge>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {mission.competencesRequises.map((s) => (
                   <Badge key={s} variant="default" className="text-sm px-3 py-1">{s}</Badge>
@@ -158,7 +197,34 @@ export function MissionDetail({ missionId, onBack }: Props) {
             </CardContent>
           </Card>
 
-          {/* Recent applicants */}
+          {/* Role details (structured sections) */}
+          {(sections?.responsibilities || sections?.niceToHave) && (
+            <Card>
+              <CardContent className="p-6 flex flex-col gap-4">
+                {sections.responsibilities && (
+                  <div className="flex flex-col gap-1.5">
+                    <h2 className="text-sm font-semibold text-foreground">Key responsibilities</h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {sections.responsibilities}
+                    </p>
+                  </div>
+                )}
+                {sections.niceToHave && (
+                  <div className="flex flex-col gap-1.5">
+                    <h2 className="text-sm font-semibold text-foreground">Nice to have</h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {sections.niceToHave}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Client: AI-matched freelancers. Freelancer: recent applicants. */}
+          {isClient ? (
+            <MatchedFreelancers missionId={missionId} />
+          ) : (
           <Card>
             <CardContent className="p-0">
               <div className="px-6 py-4 border-b border-border">
@@ -191,6 +257,7 @@ export function MissionDetail({ missionId, onBack }: Props) {
               </ul>
             </CardContent>
           </Card>
+          )}
         </div>
 
         {/* ── Right: budget + apply form ── */}
@@ -205,7 +272,8 @@ export function MissionDetail({ missionId, onBack }: Props) {
             </CardContent>
           </Card>
 
-          {/* Apply card */}
+          {/* Apply card — freelancers only */}
+          {!isClient && (
           <Card>
             <CardContent className="p-5 flex flex-col gap-4">
               {submitted ? (
@@ -259,6 +327,7 @@ export function MissionDetail({ missionId, onBack }: Props) {
               )}
             </CardContent>
           </Card>
+          )}
         </div>
       </div>
     </div>

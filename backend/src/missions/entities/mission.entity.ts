@@ -17,12 +17,21 @@ export enum MissionStatut {
   CLOSED = 'closed',
 }
 
+export enum ExperienceLevel {
+  JUNIOR = 'junior',
+  MID = 'mid',
+  SENIOR = 'senior',
+  LEAD = 'lead',
+}
+
 @Entity('missions')
 export class Mission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => ClientProfile, (client) => client.missions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ClientProfile, (client) => client.missions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'clientId' })
   client: ClientProfile;
 
@@ -49,6 +58,19 @@ export class Mission {
 
   @Column({ type: 'simple-array', nullable: true })
   competencesRequises: string[];
+
+  // ── Structured sections (additive; feed richer embeddings + skill overlap) ──
+  @Column({ type: 'simple-array', nullable: true })
+  requiredSkills: string[];
+
+  @Column({ type: 'enum', enum: ExperienceLevel, nullable: true })
+  experienceLevel: ExperienceLevel | null;
+
+  @Column({ type: 'text', nullable: true })
+  responsibilities: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  niceToHave: string | null;
 
   @CreateDateColumn()
   dateCreation: Date;

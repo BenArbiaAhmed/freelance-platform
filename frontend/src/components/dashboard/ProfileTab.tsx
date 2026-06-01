@@ -86,13 +86,33 @@ interface CompetenceResp {
   categorie: string | null
 }
 
+type ResumeStatus = 'uploaded' | 'extracting' | 'ready' | 'failed'
+
+interface ExtractedResume {
+  summary?: string
+  skills?: string[]
+  experiences?: { title?: string; company?: string; years?: number | string; description?: string }[]
+  education?: string[]
+  yearsOfExperience?: number | null
+}
+
 interface ResumeItem {
   id: string
   fileName: string
   fileUrl: string
   mimeType?: string | null
   size?: number | null
+  status: ResumeStatus
+  extracted?: ExtractedResume | null
+  extractionError?: string | null
   createdAt: string
+}
+
+const RESUME_STATUS_META: Record<ResumeStatus, { label: string; className: string }> = {
+  uploaded: { label: 'Queued', className: 'bg-gray-100 text-gray-600' },
+  extracting: { label: 'Analyzing…', className: 'bg-amber-50 text-amber-700' },
+  ready: { label: 'Ready', className: 'bg-emerald-50 text-emerald-700' },
+  failed: { label: 'Failed', className: 'bg-red-50 text-red-700' },
 }
 
 // ─── Saved banner ────────────────────────────────────────────────────────────
@@ -182,6 +202,17 @@ export function ProfileTab({ role }: Props) {
   useEffect(() => {
     void loadResumes()
   }, [role, user?.freelanceProfile?.id])
+
+  // Poll while any resume is still being processed, so the status badge and
+  // parsed-skills preview update on their own (extraction runs server-side).
+  useEffect(() => {
+    const pending = resumes.some(
+      (r) => r.status === 'uploaded' || r.status === 'extracting',
+    )
+    if (!pending) return
+    const timer = setTimeout(() => void loadResumes(), 2000)
+    return () => clearTimeout(timer)
+  }, [resumes])
 
   // ─── Personal info form ───────────────────────────────────────────────────
   const {
@@ -590,34 +621,70 @@ export function ProfileTab({ role }: Props) {
                   )}
 
                   <div className="flex flex-col gap-2">
-                    {resumes.map((resume) => (
+                    {resumes.map((resume) => {
+                      const statusMeta =
+                        RESUME_STATUS_META[resume.status] ?? RESUME_STATUS_META.uploaded
+                      const skills = resume.extracted?.skills ?? []
+                      return (
                       <div
                         key={resume.id}
-                        className="flex items-center justify-between rounded-lg border border-border bg-white px-3 py-2"
+                        className="flex flex-col gap-2 rounded-lg border border-border bg-white px-3 py-2.5"
                       >
-                        <div className="min-w-0">
-                          <a
-                            href={resolveResumeUrl(resume.fileUrl)}
-                            className="text-sm font-medium text-foreground hover:underline"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {resume.fileName}
-                          </a>
-                          <div className="text-xs text-muted-foreground">
-                            {formatSize(resume.size)}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <a
+                              href={resolveResumeUrl(resume.fileUrl)}
+                              className="text-sm font-medium text-foreground hover:underline"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {resume.fileName}
+                            </a>
+                            <div className="text-xs text-muted-foreground">
+                              {formatSize(resume.size)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusMeta.className}`}
+                            >
+                              {statusMeta.label}
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteResume(resume.id)}
+                            >
+                              Remove
+                            </Button>
                           </div>
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => deleteResume(resume.id)}
-                        >
-                          Remove
-                        </Button>
+
+                        {resume.status === 'ready' && skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border">
+                            <span className="text-xs text-muted-foreground w-full">
+                              Skills detected from your CV:
+                            </span>
+                            {skills.slice(0, 12).map((s) => (
+                              <span
+                                key={s}
+                                className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {resume.status === 'failed' && (
+                          <p className="text-xs text-red-600 pt-1 border-t border-border">
+                            {resume.extractionError ?? 'We could not analyze this file.'}
+                          </p>
+                        )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </CardContent>

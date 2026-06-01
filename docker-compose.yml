@@ -1,0 +1,44 @@
+# Infrastructure for local development.
+# - postgres: app database.
+# - qdrant:   vector DB for resume <-> mission matching.
+# - ollama:   LLM that parses resumes into structured sections. Optional — if it
+#             isn't running (or no model is pulled) the backend falls back to
+#             heuristic keyword extraction. Pull a model once it's up:
+#               docker compose exec ollama ollama pull qwen2.5:3b
+# Text embeddings are generated in-process by the backend (fastembed), so no
+# separate embedding service is needed.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: freelancehub
+      POSTGRES_PASSWORD: freelancehub
+      POSTGRES_DB: freelancehub
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - '6333:6333'
+      - '6334:6334'
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # Optional. Skip if you already run Ollama natively on :11434.
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:

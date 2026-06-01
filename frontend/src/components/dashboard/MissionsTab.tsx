@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { MissionDetail } from '@/components/dashboard/MissionDetail'
 import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
+import { RecommendedMissions } from '@/components/dashboard/RecommendedMissions'
 import { type Mission } from '@/lib/mock-data'
 import {
   useMissionsStore,
@@ -56,6 +57,9 @@ export function MissionsTab({ selectedId, onSelect, role }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* AI-matched recommendations (freelancers only) */}
+      {role === 'freelance' && <RecommendedMissions onSelect={onSelect} />}
+
       {/* Filter bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">

@@ -1,93 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { QdrantClient } from '@qdrant/js-client-rest';
-import { EmbeddingModel, FlagEmbedding } from 'fastembed';
 import { readFile } from 'fs/promises';
 import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
 import { Resume } from './entities/resume.entity';
-
-const RESUME_COLLECTION = 'resume_embeddings';
-const EMBEDDING_DIM = 384;
+import { EmbeddingService } from '../matching/embedding.service';
+import { QdrantService } from '../matching/qdrant.service';
+import { RESUME_COLLECTION } from '../matching/qdrant.constants';
+import { buildResumeText, resumeSkills } from '../matching/matching.text';
 
 @Injectable()
 export class ResumeEmbeddingService {
   private readonly logger = new Logger(ResumeEmbeddingService.name);
-  private readonly client = new QdrantClient({
-    url: process.env.QDRANT_URL ?? 'http://localhost:6333',
-  });
-  private embedderPromise: Promise<FlagEmbedding> | null = null;
-  private collectionReady = false;
 
-  async embedResume(
-    resume: Resume,
-    filePath: string,
-    mimeType?: string | null,
-  ): Promise<void> {
-    try {
-      await this.ensureCollection(EMBEDDING_DIM);
-      const text = await this.extractText(filePath, mimeType);
-      if (!text || text.trim().length < 30) {
-        this.logger.warn(
-          `Resume ${resume.id} has insufficient text for embeddings`,
-        );
-        return;
-      }
+  constructor(
+    private readonly embedding: EmbeddingService,
+    private readonly qdrant: QdrantService,
+  ) {}
 
-      const embedder = await this.getEmbedder();
-      const vector = await this.embedText(embedder, text);
-      if (!vector?.length) {
-        this.logger.warn(`Resume ${resume.id} embedding returned empty vector`);
-        return;
-      }
-
-      try {
-        await this.client.upsert(RESUME_COLLECTION, {
-          wait: true,
-          points: [
-            {
-              id: resume.id,
-              vector,
-              payload: {
-                resumeId: resume.id,
-                freelanceProfileId: resume.freelanceProfileId,
-                fileName: resume.fileName,
-                fileUrl: resume.fileUrl,
-                createdAt: resume.createdAt?.toISOString?.() ?? undefined,
-              },
-            },
-          ],
-        });
-      } catch (err) {
-        const details = (err as { response?: { data?: unknown } })?.response
-          ?.data;
-        this.logger.error(
-          `Qdrant upsert failed for resume ${resume.id} (dim=${vector.length})`,
-          details ? JSON.stringify(details) : undefined,
-        );
-        throw err;
-      }
-    } catch (err) {
-      this.logger.error(
-        `Failed to embed resume ${resume.id}`,
-        err instanceof Error ? err.stack : undefined,
-      );
-    }
-  }
-
-  private async getEmbedder(): Promise<FlagEmbedding> {
-    if (!this.embedderPromise) {
-      this.embedderPromise = FlagEmbedding.init({
-        model: EmbeddingModel.BGESmallENV15,
-      });
-    }
-    return this.embedderPromise;
-  }
-
-  private async extractText(
+  /** Pull plain text out of a PDF/DOCX file. Throws on unsupported types. */
+  async extractText(
     filePath: string,
     mimeType?: string | null,
   ): Promise<string> {
     const buffer = await readFile(filePath);
+
     if (mimeType === 'application/pdf') {
       const parser = new PDFParse({ data: buffer });
       try {
@@ -97,6 +33,7 @@ export class ResumeEmbeddingService {
         await parser.destroy();
       }
     }
+
     if (
       mimeType ===
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -104,57 +41,58 @@ export class ResumeEmbeddingService {
       const result = await mammoth.extractRawText({ buffer });
       return result.value ?? '';
     }
+
     if (mimeType === 'application/msword') {
-      this.logger.warn(
-        `Legacy .doc format not supported for resume embeddings (${filePath})`,
-      );
-      return '';
+      throw new Error('Legacy .doc format is not supported');
     }
-    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-    this.logger.warn(`Unsupported resume type .${ext} for embeddings`);
-    return '';
+
+    throw new Error(`Unsupported resume type: ${mimeType ?? 'unknown'}`);
   }
 
-  private async embedText(
-    embedder: FlagEmbedding,
-    text: string,
-  ): Promise<number[] | undefined> {
-    const generator = embedder.embed([text]);
-    for await (const batch of generator) {
-      const first = batch[0];
-      return Array.isArray(first) ? first : Array.from(first as number[]);
-    }
-    return undefined;
-  }
-
-  private async ensureCollection(vectorSize: number): Promise<void> {
-    if (this.collectionReady) return;
+  /** Embed a READY resume from its extracted JSON and upsert into Qdrant. */
+  async indexResume(resume: Resume): Promise<void> {
     try {
-      const info = await this.client.getCollection(RESUME_COLLECTION);
-      const vectors = (info as { config?: { params?: { vectors?: unknown } } })
-        ?.config?.params?.vectors;
-      const size =
-        typeof vectors === 'object' && vectors && 'size' in vectors
-          ? (vectors as { size: number }).size
-          : undefined;
-      if (size && size !== vectorSize) {
-        this.logger.warn(
-          `Qdrant collection ${RESUME_COLLECTION} has size ${size}, recreating for ${vectorSize}`,
-        );
-        await this.client.deleteCollection(RESUME_COLLECTION);
-      } else {
-        this.collectionReady = true;
+      const text = buildResumeText(resume.extracted);
+      if (text.trim().length < 20) {
+        this.logger.warn(`Resume ${resume.id} has too little text to embed`);
         return;
       }
-    } catch {
-      this.logger.warn(
-        `Qdrant collection ${RESUME_COLLECTION} missing; creating`,
+
+      const vector = await this.embedding.embedDocument(text);
+      if (!vector.length) {
+        this.logger.warn(`Resume ${resume.id} produced an empty vector`);
+        return;
+      }
+
+      await this.qdrant.upsert(RESUME_COLLECTION, {
+        id: resume.id,
+        vector,
+        payload: {
+          resumeId: resume.id,
+          freelanceProfileId: resume.freelanceProfileId,
+          skills: resumeSkills(resume.extracted),
+          fileName: resume.fileName,
+          fileUrl: resume.fileUrl,
+          createdAt: resume.createdAt?.toISOString?.() ?? undefined,
+        },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to index resume ${resume.id}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw err;
+    }
+  }
+
+  async deleteResume(resumeId: string): Promise<void> {
+    try {
+      await this.qdrant.deletePoint(RESUME_COLLECTION, resumeId);
+    } catch (err) {
+      this.logger.error(
+        `Failed to delete resume embedding ${resumeId}`,
+        err instanceof Error ? err.stack : undefined,
       );
     }
-
-    await this.client.createCollection(RESUME_COLLECTION, {
-      vectors: { size: vectorSize, distance: 'Cosine' },
-    });
-    this.collectionReady = true;
   }
 }

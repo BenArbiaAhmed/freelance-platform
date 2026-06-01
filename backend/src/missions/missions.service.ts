@@ -22,7 +22,7 @@ export class MissionsService {
 
   async create(dto: CreateMissionDto): Promise<Mission> {
     const saved = await this.repo.save(this.repo.create(dto));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+
     void this.embeddingService.embedMission(saved);
     void this.notifyMatches(saved);
     return saved;
@@ -76,12 +76,16 @@ export class MissionsService {
   async update(id: string, dto: UpdateMissionDto): Promise<Mission> {
     const entity = await this.findOne(id);
     Object.assign(entity, dto);
-    return this.repo.save(entity);
+    const saved = await this.repo.save(entity);
+    // Re-embed so the vector + payload (statut, skills…) stay in sync.
+    void this.embeddingService.embedMission(saved);
+    return saved;
   }
 
   async remove(id: string): Promise<void> {
     const result = await this.repo.delete(id);
     if (!result.affected)
       throw new NotFoundException(`Mission ${id} not found`);
+    void this.embeddingService.deleteMission(id);
   }
 }

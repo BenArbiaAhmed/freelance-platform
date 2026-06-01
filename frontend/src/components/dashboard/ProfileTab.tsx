@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/store/auth'
-import { api, apiErrorMessage } from '@/lib/api'
+import { api, apiErrorMessage, API_ORIGIN } from '@/lib/api'
 
 // ─── Schemas (mirror backend DTOs) ──────────────────────────────────────────
 
@@ -86,6 +86,15 @@ interface CompetenceResp {
   categorie: string | null
 }
 
+interface ResumeItem {
+  id: string
+  fileName: string
+  fileUrl: string
+  mimeType?: string | null
+  size?: number | null
+  createdAt: string
+}
+
 // ─── Saved banner ────────────────────────────────────────────────────────────
 function SavedBanner() {
   return (
@@ -125,6 +134,12 @@ export function ProfileTab({ role }: Props) {
   const [roleError, setRoleError] = useState<string | null>(null)
   const [securitySaved, setSecuritySaved] = useState(false)
   const [securityError, setSecurityError] = useState<string | null>(null)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeUploading, setResumeUploading] = useState(false)
+  const [resumeSaved, setResumeSaved] = useState(false)
+  const [resumeError, setResumeError] = useState<string | null>(null)
+  const [resumes, setResumes] = useState<ResumeItem[]>([])
+  const [resumesLoading, setResumesLoading] = useState(false)
 
   // ── Skills state (freelance only) ──
   const [skills, setSkills] = useState<Skill[]>([])
@@ -147,6 +162,25 @@ export function ProfileTab({ role }: Props) {
         setSkills(mySkills)
       })
       .catch(() => {})
+  }, [role, user?.freelanceProfile?.id])
+
+  async function loadResumes() {
+    if (role !== 'freelance' || !user?.freelanceProfile?.id) return
+    setResumesLoading(true)
+    try {
+      const { data } = await api.get<ResumeItem[]>('/resumes', {
+        params: { freelanceProfileId: user.freelanceProfile.id },
+      })
+      setResumes(data)
+    } catch {
+      setResumes([])
+    } finally {
+      setResumesLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadResumes()
   }, [role, user?.freelanceProfile?.id])
 
   // ─── Personal info form ───────────────────────────────────────────────────
@@ -207,6 +241,57 @@ export function ProfileTab({ role }: Props) {
     } catch (err) {
       setRoleError(apiErrorMessage(err, 'Could not save freelance profile'))
     }
+  }
+
+  async function onResumeUpload(event: React.FormEvent) {
+    event.preventDefault()
+    setResumeError(null)
+    setResumeSaved(false)
+    if (!resumeFile || !user?.freelanceProfile?.id) return
+
+    const body = new FormData()
+    body.append('file', resumeFile)
+    body.append('freelanceProfileId', user.freelanceProfile.id)
+
+    try {
+      setResumeUploading(true)
+      await api.post('/resumes', body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      await loadResumes()
+      setResumeSaved(true)
+      setResumeFile(null)
+    } catch (err) {
+      setResumeError(apiErrorMessage(err, 'Could not upload resume'))
+    } finally {
+      setResumeUploading(false)
+    }
+  }
+
+  async function deleteResume(id: string) {
+    if (!user?.freelanceProfile?.id) return
+    try {
+      await api.delete(`/resumes/${id}`)
+      setResumes((prev) => prev.filter((resume) => resume.id !== id))
+    } catch (err) {
+      setResumeError(apiErrorMessage(err, 'Could not delete resume'))
+    }
+  }
+
+  function formatSize(bytes?: number | null) {
+    if (!bytes || bytes <= 0) return ''
+    const units = ['B', 'KB', 'MB', 'GB']
+    let size = bytes
+    let unit = 0
+    while (size >= 1024 && unit < units.length - 1) {
+      size /= 1024
+      unit += 1
+    }
+    return `${size.toFixed(size >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`
+  }
+
+  function resolveResumeUrl(url: string) {
+    return url.startsWith('http') ? url : `${API_ORIGIN}${url}`
   }
 
   // ─── Client profile form ──────────────────────────────────────────────────
@@ -445,6 +530,96 @@ export function ProfileTab({ role }: Props) {
                     </Button>
                   </div>
                 </form>
+              </CardContent>
+            </Card>
+
+            {/* Resume upload */}
+            <Card>
+              <CardContent className="p-6">
+                <form onSubmit={onResumeUpload} className="flex flex-col gap-4" noValidate>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Resume</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Upload your latest resume so clients can review your profile faster.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="resume">Resume file</Label>
+                    <Input
+                      id="resume"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)}
+                    />
+                    {resumeFile && (
+                      <p className="text-xs text-muted-foreground">Selected: {resumeFile.name}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    {resumeSaved && <SavedBanner />}
+                    {resumeError && <ErrorBanner message={resumeError} />}
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={resumeUploading || !resumeFile}
+                      className="ml-auto shadow-sm shadow-primary/20"
+                    >
+                      {resumeUploading ? 'Uploading…' : 'Upload resume'}
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="mt-6 border-t border-border pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-foreground">Your resumes</h4>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void loadResumes()}
+                      disabled={resumesLoading}
+                    >
+                      {resumesLoading ? 'Refreshing…' : 'Refresh'}
+                    </Button>
+                  </div>
+
+                  {resumes.length === 0 && !resumesLoading && (
+                    <p className="text-xs text-muted-foreground">No resumes uploaded yet.</p>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    {resumes.map((resume) => (
+                      <div
+                        key={resume.id}
+                        className="flex items-center justify-between rounded-lg border border-border bg-white px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <a
+                            href={resolveResumeUrl(resume.fileUrl)}
+                            className="text-sm font-medium text-foreground hover:underline"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {resume.fileName}
+                          </a>
+                          <div className="text-xs text-muted-foreground">
+                            {formatSize(resume.size)}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteResume(resume.id)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

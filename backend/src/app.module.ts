@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
 import { FreelanceProfile } from './users/entities/freelance-profile.entity';
 import { ClientProfile } from './users/entities/client-profile.entity';
+import { Resume } from './resumes/entities/resume.entity';
 import { Competence } from './competences/entities/competence.entity';
 import { FreelanceCompetence } from './competences/entities/freelance-competence.entity';
 import { Mission } from './missions/entities/mission.entity';
@@ -28,6 +29,7 @@ import { PaiementsModule } from './paiements/paiements.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { SearchModule } from './search/search.module';
 import { AuthModule } from './auth/auth.module';
+import { ResumesModule } from './resumes/resumes.module';
 
 @Module({
   imports: [
@@ -53,6 +55,7 @@ import { AuthModule } from './auth/auth.module';
           User,
           FreelanceProfile,
           ClientProfile,
+          Resume,
           Competence,
           FreelanceCompetence,
           Mission,
@@ -76,6 +79,7 @@ import { AuthModule } from './auth/auth.module';
     WebhooksModule,
     SearchModule,
     AuthModule,
+    ResumesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

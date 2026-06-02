@@ -12,6 +12,7 @@ import { Footer } from '@/components/Footer'
 import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
 import DashboardPage from '@/pages/DashboardPage'
+import OnboardingPage from '@/pages/OnboardingPage'
 
 function LandingPage() {
   return (
@@ -33,7 +34,17 @@ function LandingPage() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
+  const needsOnboarding = useAuthStore((s) => s.needsOnboarding)
   if (!token) return <Navigate to="/login" replace />
+  if (needsOnboarding) return <Navigate to="/onboarding" replace />
+  return <>{children}</>
+}
+
+function OnboardingRoute({ children }: { children: React.ReactNode }) {
+  const token = useAuthStore((s) => s.token)
+  const needsOnboarding = useAuthStore((s) => s.needsOnboarding)
+  if (!token) return <Navigate to="/login" replace />
+  if (!needsOnboarding) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
@@ -44,6 +55,14 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/onboarding"
+          element={
+            <OnboardingRoute>
+              <OnboardingPage />
+            </OnboardingRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

@@ -44,11 +44,13 @@ export interface RegisterInput {
 interface AuthState {
   token: string | null
   user: AuthUser | null
+  needsOnboarding: boolean
   loading: boolean
   error: string | null
   login: (email: string, motDePasse: string) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
   loadProfile: () => Promise<void>
+  completeOnboarding: () => void
   logout: () => void
   clearError: () => void
 }
@@ -58,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       token: null,
       user: null,
+      needsOnboarding: false,
       loading: false,
       error: null,
 
@@ -79,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.post<AuthResult>('/auth/register', input)
           setAuthToken(data.accessToken)
-          set({ token: data.accessToken, user: data.user, loading: false })
+          set({ token: data.accessToken, user: data.user, needsOnboarding: true, loading: false })
           await get().loadProfile()
         } catch (err) {
           set({ loading: false, error: apiErrorMessage(err, 'Could not create account') })
@@ -100,16 +103,18 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      completeOnboarding: () => set({ needsOnboarding: false }),
+
       logout: () => {
         setAuthToken(null)
-        set({ token: null, user: null, error: null })
+        set({ token: null, user: null, needsOnboarding: false, error: null })
       },
 
       clearError: () => set({ error: null }),
     }),
     {
       name: AUTH_STORAGE_KEY,
-      partialize: (s) => ({ token: s.token, user: s.user }),
+      partialize: (s) => ({ token: s.token, user: s.user, needsOnboarding: s.needsOnboarding }),
       onRehydrateStorage: () => (state) => {
         if (state?.token) setAuthToken(state.token)
       },

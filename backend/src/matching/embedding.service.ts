@@ -73,17 +73,17 @@ export class EmbeddingService implements OnModuleInit {
 
     if (this.isE5) {
       if (kind === 'query') {
-        return embedder.queryEmbed(clean);
+        return Array.from(await embedder.queryEmbed(clean));
       }
       for await (const batch of embedder.passageEmbed([clean], 1)) {
-        return batch[0];
+        return Array.from(batch[0]);
       }
       return [];
     }
 
     // BGE models are used without e5 prefixes.
     for await (const batch of embedder.embed([clean], 1)) {
-      return batch[0];
+      return Array.from(batch[0]);
     }
     return [];
   }

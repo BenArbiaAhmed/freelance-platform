@@ -64,7 +64,7 @@ export default function SignupPage() {
         motDePasse: data.password,
         role: data.role,
       })
-      navigate('/dashboard')
+      navigate('/onboarding')
     } catch {
       // error surfaced via the auth store
     }

@@ -1,4 +1,4 @@
-import { ArrowLeft, Star, MapPin, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Star, MapPin, CheckCircle2, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -51,11 +51,17 @@ export function FreelancerDetail({ freelancerId, onBack }: Props) {
               {/* Avatar + name */}
               <div className="flex items-start gap-5">
                 <div className="relative shrink-0">
-                  <img
-                    src={freelancer.photo}
-                    alt={freelancer.nom}
-                    className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
-                  />
+                  {freelancer.photo ? (
+                    <img
+                      src={freelancer.photo}
+                      alt={freelancer.nom}
+                      className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl border border-border bg-secondary shadow-sm flex items-center justify-center">
+                      <User className="w-10 h-10 text-muted-foreground" />
+                    </div>
+                  )}
                   {freelancer.disponible && (
                     <span className="absolute -bottom-1 -right-1 flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full shadow">
                       <span className="w-1.5 h-1.5 rounded-full bg-white" />

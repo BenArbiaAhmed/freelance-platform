@@ -55,7 +55,7 @@ export function mapFreelancer(item: GqlFreelancerItem): FreelanceProfile {
   return {
     id: item.id,
     nom: item.user.nom,
-    photo: item.user.photo ?? `https://i.pravatar.cc/80?u=${encodeURIComponent(item.user.nom)}`,
+    photo: item.user.photo ?? null,
     bio: item.user.bio ?? '',
     tarifJournalier: Number(item.tarifJournalier ?? 0),
     disponible: item.disponible,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Calendar, Users, Building2, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Building2, ExternalLink, CheckCircle2, User } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -234,7 +234,13 @@ export function MissionDetail({ missionId, onBack }: Props) {
                 {applicants.map((f) => (
                   <li key={f.id} className="flex items-center gap-3 px-6 py-4">
                     <div className="relative shrink-0">
-                      <img src={f.photo} alt={f.nom} className="w-9 h-9 rounded-full object-cover border border-border" />
+                      {f.photo ? (
+                        <img src={f.photo} alt={f.nom} className="w-9 h-9 rounded-full object-cover border border-border" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full border border-border bg-secondary flex items-center justify-center">
+                          <User className="w-4.5 h-4.5 text-muted-foreground" />
+                        </div>
+                      )}
                       {f.disponible && (
                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                       )}

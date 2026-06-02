@@ -20,7 +20,7 @@ export interface Mission {
 export interface FreelanceProfile {
   id: string
   nom: string
-  photo: string
+  photo: string | null
   bio: string
   tarifJournalier: number
   disponible: boolean

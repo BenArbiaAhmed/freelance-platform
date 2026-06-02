@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Star, Search } from 'lucide-react'
+import { Star, Search, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -144,7 +144,13 @@ function FreelancerCard({ freelancer: f, onSelect }: { freelancer: FreelanceProf
         {/* Avatar + name */}
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
-            <img src={f.photo} alt={f.nom} className="w-12 h-12 rounded-full object-cover border border-border" />
+            {f.photo ? (
+              <img src={f.photo} alt={f.nom} className="w-12 h-12 rounded-full object-cover border border-border" />
+            ) : (
+              <div className="w-12 h-12 rounded-full border border-border bg-secondary flex items-center justify-center">
+                <User className="w-6 h-6 text-muted-foreground" />
+              </div>
+            )}
             {f.disponible && (
               <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white" />
             )}

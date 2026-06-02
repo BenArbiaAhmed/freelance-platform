@@ -4,12 +4,20 @@ import { Button } from '@/components/ui/button'
 import { NotificationsPopup } from '@/components/dashboard/NotificationsPopup'
 import { CreateMissionModal } from '@/components/dashboard/CreateMissionModal'
 
-const tabTitles: Record<string, string> = {
+const freelancerTabTitles: Record<string, string> = {
   overview: 'Overview',
-  missions: 'Browse Missions',
-  freelancers: 'Browse Freelancers',
+  missions: 'Find Work',
   applications: 'My Applications',
   contracts: 'My Contracts',
+  profile: 'My Profile',
+}
+
+const clientTabTitles: Record<string, string> = {
+  overview: 'Overview',
+  missions: 'My Missions',
+  freelancers: 'Browse Freelancers',
+  applications: 'Applications Received',
+  contracts: 'Contracts',
   profile: 'My Profile',
 }
 
@@ -19,6 +27,7 @@ interface Props {
 }
 
 export function DashboardHeader({ tab, role }: Props) {
+  const tabTitles = role === 'client' ? clientTabTitles : freelancerTabTitles
   return (
     <header className="h-16 border-b border-border bg-white flex items-center justify-between px-6 gap-4 shrink-0">
       <h1 className="text-base font-semibold text-foreground">{tabTitles[tab]}</h1>

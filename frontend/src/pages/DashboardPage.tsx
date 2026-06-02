@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [selectedFreelancerId, setSelectedFreelancerId] = useState<string | null>(null)
 
   function navigate(nextTab: DashTab) {
+    if (role === 'freelance' && nextTab === 'freelancers') return
     if (nextTab !== 'missions') setSelectedMissionId(null)
     if (nextTab !== 'freelancers') setSelectedFreelancerId(null)
     setTab(nextTab)

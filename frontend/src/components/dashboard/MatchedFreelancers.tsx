@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -70,14 +70,17 @@ export function MatchedFreelancers({ missionId }: Props) {
             {freelancers.slice(0, 8).map((f) => (
               <li key={f.id} className="flex items-center gap-3 px-6 py-4">
                 <div className="relative shrink-0">
-                  <img
-                    src={
-                      f.user.photo ??
-                      `https://i.pravatar.cc/40?u=${encodeURIComponent(f.user.nom)}`
-                    }
-                    alt={f.user.nom}
-                    className="w-9 h-9 rounded-full object-cover border border-border"
-                  />
+                  {f.user.photo ? (
+                    <img
+                      src={f.user.photo}
+                      alt={f.user.nom}
+                      className="w-9 h-9 rounded-full object-cover border border-border"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full border border-border bg-secondary flex items-center justify-center">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  )}
                   {f.disponible && (
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                   )}

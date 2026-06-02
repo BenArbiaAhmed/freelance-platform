@@ -1,4 +1,4 @@
-import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, UserCircle, LogOut, ChevronLeft, ChevronRight, User } from 'lucide-react'
+import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, LogOut, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
@@ -18,11 +18,18 @@ interface NavItem {
   icon: React.ElementType
 }
 
-const navItems: NavItem[] = [
+const freelancerNavItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'missions', label: 'Missions', icon: Briefcase },
+  { id: 'missions', label: 'Find Work', icon: Briefcase },
+  { id: 'applications', label: 'My Applications', icon: BookOpen },
+  { id: 'contracts', label: 'My Contracts', icon: FileText },
+]
+
+const clientNavItems: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'missions', label: 'My Missions', icon: Briefcase },
   { id: 'freelancers', label: 'Freelancers', icon: Users },
-  { id: 'applications', label: 'Applications', icon: BookOpen },
+  { id: 'applications', label: 'Applications Received', icon: BookOpen },
   { id: 'contracts', label: 'Contracts', icon: FileText },
 ]
 
@@ -37,6 +44,7 @@ interface Props {
 export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user }: Props) {
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
+  const navItems = user.role === 'client' ? clientNavItems : freelancerNavItems
 
   function handleLogout() {
     logout()
@@ -79,26 +87,19 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
         ))}
       </nav>
 
-      {/* Bottom section: Profile + Logout */}
-      <div className="border-t border-border px-2 py-3 flex flex-col gap-1">
-        {/* Profile nav item */}
+      {/* Bottom section: Profile row (avatar = profile button) + Logout */}
+      <div className="border-t border-border px-2 py-3 flex items-center gap-1">
         <button
           onClick={() => onNavigate('profile')}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full text-left',
+            'flex items-center gap-3 rounded-lg px-3 py-2 min-w-0 flex-1 text-left transition-colors',
             active === 'profile'
               ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-            collapsed && 'justify-center px-0'
+            collapsed && 'justify-center px-0 flex-none w-10'
           )}
           title={collapsed ? 'Profile' : undefined}
         >
-          <UserCircle className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>Profile</span>}
-        </button>
-
-        {/* User row */}
-        <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-0')}>
           {resolvePhotoUrl(user.photo) ? (
             <img
               src={resolvePhotoUrl(user.photo)!}
@@ -111,21 +112,21 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
             </div>
           )}
           {!collapsed && (
-            <>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">{user.nom}</p>
-                <p className="text-[11px] text-muted-foreground capitalize">{user.role}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title="Log out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">{user.nom}</p>
+              <p className="text-[11px] text-muted-foreground capitalize">{user.role}</p>
+            </div>
           )}
-        </div>
+        </button>
+        {!collapsed && (
+          <button
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0 p-1"
+            title="Log out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Collapse toggle */}

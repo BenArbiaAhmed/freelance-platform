@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, X, Star, ChevronDown, ExternalLink, Briefcase } from 'lucide-react'
+import { Check, X, Star, ChevronDown, ExternalLink, Briefcase, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -127,7 +127,13 @@ function ApplicantRow({
     <li className="px-5 py-4 flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <div className="relative shrink-0">
-          <img src={f.photo} alt={f.nom} className="w-10 h-10 rounded-full object-cover border border-border" />
+          {f.photo ? (
+            <img src={f.photo} alt={f.nom} className="w-10 h-10 rounded-full object-cover border border-border" />
+          ) : (
+            <div className="w-10 h-10 rounded-full border border-border bg-secondary flex items-center justify-center">
+              <User className="w-5 h-5 text-muted-foreground" />
+            </div>
+          )}
           {f.disponible && (
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
           )}

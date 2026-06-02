@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Briefcase, BookOpen, FileText, DollarSign, TrendingUp, Clock } from 'lucide-react'
+import { Briefcase, BookOpen, FileText, DollarSign, TrendingUp, Clock, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useMissionsStore } from '@/store/missions'
 import { useAuthStore } from '@/store/auth'
@@ -159,7 +159,13 @@ export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
                   ))
                 : received.slice(0, 5).map((a) => (
                     <li key={a.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
-                      <img src={a.freelance.photo} alt={a.freelance.nom} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                      {a.freelance.photo ? (
+                        <img src={a.freelance.photo} alt={a.freelance.nom} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full border border-border bg-secondary flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{a.freelance.nom}</p>
                         <p className="text-xs text-muted-foreground truncate">{a.mission.titre}</p>

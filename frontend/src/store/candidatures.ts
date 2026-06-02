@@ -39,7 +39,7 @@ export interface ReceivedApplication {
   freelance: {
     id: string
     nom: string
-    photo: string
+    photo: string | null
     bio: string
     rating: number
     tarifJournalier: number
@@ -79,7 +79,7 @@ function mapReceived(c: BackendCandidature): ReceivedApplication {
     freelance: {
       id: c.freelance?.id ?? c.freelanceId,
       nom,
-      photo: c.freelance?.user?.photo ?? `https://i.pravatar.cc/80?u=${encodeURIComponent(nom)}`,
+      photo: c.freelance?.user?.photo ?? null,
       bio: c.freelance?.user?.bio ?? '',
       rating: Number(c.freelance?.rating ?? 0),
       tarifJournalier: Number(c.freelance?.tarifJournalier ?? 0),

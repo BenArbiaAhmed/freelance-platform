@@ -1,7 +1,14 @@
-import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, UserCircle, LogOut, ChevronLeft, ChevronRight, User } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
+import { API_ORIGIN } from '@/lib/api'
+
+function resolvePhotoUrl(url?: string | null): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_ORIGIN}${url}`
+}
 
 export type DashTab = 'overview' | 'missions' | 'freelancers' | 'applications' | 'contracts' | 'profile'
 
@@ -92,11 +99,17 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
 
         {/* User row */}
         <div className={cn('flex items-center gap-3 px-3 py-2', collapsed && 'justify-center px-0')}>
-          <img
-            src={user.photo ?? `https://i.pravatar.cc/32?u=${user.nom}`}
-            alt={user.nom}
-            className="w-7 h-7 rounded-full object-cover shrink-0 border border-border"
-          />
+          {resolvePhotoUrl(user.photo) ? (
+            <img
+              src={resolvePhotoUrl(user.photo)!}
+              alt={user.nom}
+              className="w-7 h-7 rounded-full object-cover shrink-0 border border-border"
+            />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-secondary border border-border shrink-0 flex items-center justify-center">
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+          )}
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">

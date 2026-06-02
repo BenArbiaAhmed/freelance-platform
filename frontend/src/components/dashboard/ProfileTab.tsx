@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Camera, Plus, X, CheckCircle2 } from 'lucide-react'
+import { Camera, Plus, X, CheckCircle2, User } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,13 +13,22 @@ import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/store/auth'
 import { api, apiErrorMessage, API_ORIGIN } from '@/lib/api'
 
+function resolvePhotoUrl(url?: string | null): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_ORIGIN}${url}`
+}
+
 // ─── Schemas (mirror backend DTOs) ──────────────────────────────────────────
 
 const personalSchema = z.object({
   nom: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email'),
   bio: z.string().max(500, 'Bio must be under 500 characters').optional(),
-  photo: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  photo: z.string().refine(
+    (v) => !v || v.startsWith('http') || v.startsWith('/'),
+    'Enter a valid URL'
+  ).optional().or(z.literal('')),
 })
 type PersonalForm = z.infer<typeof personalSchema>
 
@@ -148,6 +157,8 @@ export function ProfileTab({ role }: Props) {
   const { user, loadProfile } = useAuthStore()
 
   const [photoPreview, setPhotoPreview] = useState(user?.photo ?? '')
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const [personalSaved, setPersonalSaved] = useState(false)
   const [personalError, setPersonalError] = useState<string | null>(null)
   const [roleSaved, setRoleSaved] = useState(false)
@@ -219,6 +230,7 @@ export function ProfileTab({ role }: Props) {
     register: regPersonal,
     handleSubmit: handlePersonal,
     watch: watchPersonal,
+    setValue: setPersonalValue,
     formState: { errors: errPersonal, isSubmitting: subPersonal },
   } = useForm<PersonalForm>({
     resolver: zodResolver(personalSchema),
@@ -240,6 +252,31 @@ export function ProfileTab({ role }: Props) {
       setPersonalSaved(true)
     } catch (err) {
       setPersonalError(apiErrorMessage(err, 'Could not save personal info'))
+    }
+  }
+
+  async function handlePhotoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !user?.id) return
+    const body = new FormData()
+    body.append('photo', file)
+    try {
+      setPhotoUploading(true)
+      setPersonalError(null)
+      const { data } = await api.post<{ photo?: string }>(`/users/${user.id}/photo`, body, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      await loadProfile()
+      if (data.photo) {
+        setPersonalValue('photo', data.photo)
+        setPhotoPreview(data.photo)
+      }
+      setPersonalSaved(true)
+    } catch (err) {
+      setPersonalError(apiErrorMessage(err, 'Could not upload profile picture'))
+    } finally {
+      setPhotoUploading(false)
+      if (photoInputRef.current) photoInputRef.current.value = ''
     }
   }
 
@@ -426,16 +463,36 @@ export function ProfileTab({ role }: Props) {
 
       {/* ── Avatar header ── */}
       <div className="flex items-center gap-5">
-        <div className="relative group shrink-0">
-          <img
-            src={watchedPhoto || photoPreview || 'https://i.pravatar.cc/120?img=47'}
-            alt="Profile"
-            className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
-            onError={() => setPhotoPreview('https://i.pravatar.cc/120?img=47')}
-          />
+        <div
+          className="relative group shrink-0 cursor-pointer"
+          onClick={() => photoInputRef.current?.click()}
+          title="Upload profile picture"
+        >
+          {resolvePhotoUrl(watchedPhoto) || resolvePhotoUrl(photoPreview) ? (
+            <img
+              src={resolvePhotoUrl(watchedPhoto) || resolvePhotoUrl(photoPreview) || ''}
+              alt="Profile"
+              className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
+              onError={() => setPhotoPreview('')}
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-2xl bg-secondary border border-border shadow-sm flex items-center justify-center">
+              <User className="w-9 h-9 text-muted-foreground" />
+            </div>
+          )}
           <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Camera className="w-5 h-5 text-white" />
+            {photoUploading
+              ? <span className="text-white text-xs font-medium">Uploading…</span>
+              : <Camera className="w-5 h-5 text-white" />
+            }
           </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoFileChange}
+          />
         </div>
         <div>
           <h1 className="text-xl font-bold text-foreground">{user?.nom ?? ''}</h1>
@@ -468,7 +525,7 @@ export function ProfileTab({ role }: Props) {
                 <Label htmlFor="photo">Profile photo URL</Label>
                 <Input id="photo" placeholder="https://…" {...regPersonal('photo')} aria-invalid={!!errPersonal.photo} />
                 {errPersonal.photo && <p className="mt-1 text-xs text-destructive">{errPersonal.photo.message}</p>}
-                <p className="mt-1 text-xs text-muted-foreground">Paste a direct image URL. The preview above updates live.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Paste a URL, or click the avatar above to upload a file.</p>
               </div>
 
               <div>

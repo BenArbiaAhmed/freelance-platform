@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { FreelanceProfile } from '../../users/entities/freelance-profile.entity';
 import { Competence } from './competence.entity';
 
@@ -9,25 +15,42 @@ export enum NiveauCompetence {
   EXPERT = 'expert',
 }
 
+/** Where a skill came from: entered manually vs accepted from a parsed resume. */
+export enum SkillSource {
+  MANUAL = 'manual',
+  RESUME = 'resume',
+}
+
 @Entity('freelance_competences')
 export class FreelanceCompetence {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => FreelanceProfile, (profile) => profile.competences, { onDelete: 'CASCADE' })
+  @ManyToOne(() => FreelanceProfile, (profile) => profile.competences, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'freelanceId' })
   freelanceProfile: FreelanceProfile;
 
   @Column('uuid')
   freelanceId: string;
 
-  @ManyToOne(() => Competence, (competence) => competence.freelances, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Competence, (competence) => competence.freelances, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'competenceId' })
   competence: Competence;
 
   @Column('uuid')
   competenceId: string;
 
-  @Column({ type: 'enum', enum: NiveauCompetence, default: NiveauCompetence.INTERMEDIAIRE })
+  @Column({
+    type: 'enum',
+    enum: NiveauCompetence,
+    default: NiveauCompetence.INTERMEDIAIRE,
+  })
   niveau: NiveauCompetence;
+
+  @Column({ type: 'enum', enum: SkillSource, default: SkillSource.MANUAL })
+  source: SkillSource;
 }

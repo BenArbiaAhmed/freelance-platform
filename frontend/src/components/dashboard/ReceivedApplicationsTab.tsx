@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth'
 import { useCandidaturesStore, type ReceivedApplication } from '@/store/candidatures'
 import { cn } from '@/lib/utils'
+import { resolvePhotoUrl } from '@/lib/api'
 
 const statusStyle: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -127,8 +128,8 @@ function ApplicantRow({
     <li className="px-5 py-4 flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <div className="relative shrink-0">
-          {f.photo ? (
-            <img src={f.photo} alt={f.nom} className="w-10 h-10 rounded-full object-cover border border-border" />
+          {resolvePhotoUrl(f.photo) ? (
+            <img src={resolvePhotoUrl(f.photo)!} alt={f.nom} className="w-10 h-10 rounded-full object-cover border border-border" />
           ) : (
             <div className="w-10 h-10 rounded-full border border-border bg-secondary flex items-center justify-center">
               <User className="w-5 h-5 text-muted-foreground" />

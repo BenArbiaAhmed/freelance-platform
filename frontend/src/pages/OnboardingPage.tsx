@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select } from '@/components/ui/select'
 import { useAuthStore } from '@/store/auth'
-import { api, apiErrorMessage, API_ORIGIN } from '@/lib/api'
+import { api, apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
 
 
 const bioSchema = z.object({
@@ -59,12 +59,6 @@ interface FreelanceCompetenceResp {
 }
 
 interface CompetenceResp { id: string; nom: string; categorie: string | null }
-
-function resolvePhotoUrl(url?: string | null): string | null {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${API_ORIGIN}${url}`
-}
 
 const NIVEAU_COLOR: Record<Niveau, string> = {
   debutant: 'bg-gray-100 text-gray-600',

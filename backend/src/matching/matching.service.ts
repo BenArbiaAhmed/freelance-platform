@@ -19,10 +19,11 @@ import {
   SEARCH_LIMIT,
 } from './qdrant.constants';
 import {
+  freelanceSkills,
   hybridScore,
   missionSkills,
   normalizeSkills,
-  resumeSkills,
+  profileCompetenceSkills,
   skillJaccard,
 } from './matching.text';
 
@@ -44,7 +45,10 @@ export class MatchingService {
   async recommendMissionsForFreelance(
     userId: string,
   ): Promise<MatchedMission[]> {
-    const profile = await this.profileRepo.findOne({ where: { userId } });
+    const profile = await this.profileRepo.findOne({
+      where: { userId },
+      relations: { competences: { competence: true } },
+    });
     if (!profile) {
       throw new NotFoundException('Freelance profile not found');
     }
@@ -70,7 +74,8 @@ export class MatchingService {
     const vector = await this.getVector(RESUME_COLLECTION, resume.id);
     if (!vector) return [];
 
-    const mySkills = resumeSkills(resume.extracted);
+    // Score against both skill sources: form competences ∪ parsed resume skills.
+    const mySkills = freelanceSkills(profile, resume.extracted);
     const hits = await this.search(MISSION_COLLECTION, vector, {
       must: [{ key: 'statut', match: { value: MissionStatut.ACTIVE } }],
     });
@@ -120,24 +125,22 @@ export class MatchingService {
     const hits = await this.search(RESUME_COLLECTION, vector);
     if (hits.length === 0) return [];
 
-    // A freelancer may have several resumes; keep their best hybrid score.
-    const best = new Map<
-      string,
-      { score: number; overlap: number; skills: string[] }
-    >();
+    // A freelancer may have several resumes; keep the one with the best vector
+    // similarity. Form competences are folded in per-profile below, so the
+    // final score reflects both skill sources.
+    const best = new Map<string, { cosine: number; resumeSkills: string[] }>();
     for (const hit of hits) {
       const profileId = hit.payload?.freelanceProfileId;
       if (typeof profileId !== 'string') continue;
-      const theirSkills = normalizeSkills(
-        Array.isArray(hit.payload?.skills)
-          ? (hit.payload.skills as string[])
-          : [],
-      );
-      const overlap = skillJaccard(wantedSkills, theirSkills);
-      const score = hybridScore(hit.score ?? 0, wantedSkills, theirSkills);
+      const cosine = hit.score ?? 0;
       const previous = best.get(profileId);
-      if (!previous || score > previous.score) {
-        best.set(profileId, { score, overlap, skills: theirSkills });
+      if (!previous || cosine > previous.cosine) {
+        const skills = normalizeSkills(
+          Array.isArray(hit.payload?.skills)
+            ? (hit.payload.skills as string[])
+            : [],
+        );
+        best.set(profileId, { cosine, resumeSkills: skills });
       }
     }
     if (best.size === 0) return [];
@@ -149,17 +152,17 @@ export class MatchingService {
 
     return profiles
       .map((profile) => {
-        const entry = best.get(profile.id) ?? {
-          score: 0,
-          overlap: 0,
-          skills: [],
-        };
-        return this.mapFreelance(
-          profile,
-          entry.score,
-          entry.overlap,
-          entry.skills,
-        );
+        const entry = best.get(profile.id) ?? { cosine: 0, resumeSkills: [] };
+        // Effective skills = form competences ∪ parsed resume skills.
+        const theirSkills = normalizeSkills([
+          ...profileCompetenceSkills(profile),
+          ...entry.resumeSkills,
+        ]);
+        const overlap = skillJaccard(wantedSkills, theirSkills);
+        const score = hybridScore(entry.cosine, wantedSkills, theirSkills);
+        // Display keeps resume-only skills; form skills already ride in
+        // `competences` on the response (avoids double-listing in the UI).
+        return this.mapFreelance(profile, score, overlap, entry.resumeSkills);
       })
       .sort((a, b) => b.matchScore - a.matchScore);
   }

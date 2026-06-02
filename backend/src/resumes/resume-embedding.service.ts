@@ -5,6 +5,7 @@ import mammoth from 'mammoth';
 import { Resume } from './entities/resume.entity';
 import { EmbeddingService } from '../matching/embedding.service';
 import { QdrantService } from '../matching/qdrant.service';
+import { LlamaCloudParseService } from '../matching/parsing/llama-cloud-parse.service';
 import { RESUME_COLLECTION } from '../matching/qdrant.constants';
 import { buildResumeText, resumeSkills } from '../matching/matching.text';
 
@@ -15,9 +16,14 @@ export class ResumeEmbeddingService {
   constructor(
     private readonly embedding: EmbeddingService,
     private readonly qdrant: QdrantService,
+    private readonly llamaParse: LlamaCloudParseService,
   ) {}
 
-  /** Pull plain text out of a PDF/DOCX file. Throws on unsupported types. */
+  /**
+   * Pull text out of a PDF/DOCX file. PDFs go through LlamaCloud (markdown)
+   * when configured, falling back to local pdf-parse on any failure or when no
+   * API key is set. Throws on unsupported types.
+   */
   async extractText(
     filePath: string,
     mimeType?: string | null,
@@ -25,6 +31,17 @@ export class ResumeEmbeddingService {
     const buffer = await readFile(filePath);
 
     if (mimeType === 'application/pdf') {
+      if (this.llamaParse.enabled) {
+        try {
+          return await this.llamaParse.parseToMarkdown(buffer, filePath);
+        } catch (err) {
+          this.logger.warn(
+            `LlamaCloud parse failed (${
+              err instanceof Error ? err.message : String(err)
+            }) — falling back to local pdf-parse`,
+          );
+        }
+      }
       const parser = new PDFParse({ data: buffer });
       try {
         const result = await parser.getText();

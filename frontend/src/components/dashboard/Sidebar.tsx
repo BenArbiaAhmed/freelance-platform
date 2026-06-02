@@ -2,13 +2,7 @@ import { Zap, LayoutDashboard, Briefcase, Users, FileText, BookOpen, LogOut, Che
 import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
-import { API_ORIGIN } from '@/lib/api'
-
-function resolvePhotoUrl(url?: string | null): string | null {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${API_ORIGIN}${url}`
-}
+import { resolvePhotoUrl } from '@/lib/api'
 
 export type DashTab = 'overview' | 'missions' | 'freelancers' | 'applications' | 'contracts' | 'profile'
 

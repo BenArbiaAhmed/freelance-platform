@@ -13,6 +13,7 @@ import {
   type SortDirection,
 } from '@/store/freelancers'
 import { cn } from '@/lib/utils'
+import { resolvePhotoUrl } from '@/lib/api'
 
 interface Props {
   selectedId: string | null
@@ -144,8 +145,8 @@ function FreelancerCard({ freelancer: f, onSelect }: { freelancer: FreelanceProf
         {/* Avatar + name */}
         <div className="flex items-start gap-3">
           <div className="relative shrink-0">
-            {f.photo ? (
-              <img src={f.photo} alt={f.nom} className="w-12 h-12 rounded-full object-cover border border-border" />
+            {resolvePhotoUrl(f.photo) ? (
+              <img src={resolvePhotoUrl(f.photo)!} alt={f.nom} className="w-12 h-12 rounded-full object-cover border border-border" />
             ) : (
               <div className="w-12 h-12 rounded-full border border-border bg-secondary flex items-center justify-center">
                 <User className="w-6 h-6 text-muted-foreground" />

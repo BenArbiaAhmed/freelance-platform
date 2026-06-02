@@ -7,7 +7,7 @@ import {
   matchPercent,
   type MatchedFreelance,
 } from '@/lib/matching'
-import { apiErrorMessage } from '@/lib/api'
+import { apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
 
 interface Props {
   missionId: string
@@ -70,9 +70,9 @@ export function MatchedFreelancers({ missionId }: Props) {
             {freelancers.slice(0, 8).map((f) => (
               <li key={f.id} className="flex items-center gap-3 px-6 py-4">
                 <div className="relative shrink-0">
-                  {f.user.photo ? (
+                  {resolvePhotoUrl(f.user.photo) ? (
                     <img
-                      src={f.user.photo}
+                      src={resolvePhotoUrl(f.user.photo)!}
                       alt={f.user.nom}
                       className="w-9 h-9 rounded-full object-cover border border-border"
                     />

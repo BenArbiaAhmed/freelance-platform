@@ -11,13 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/store/auth'
-import { api, apiErrorMessage, API_ORIGIN } from '@/lib/api'
-
-function resolvePhotoUrl(url?: string | null): string | null {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${API_ORIGIN}${url}`
-}
+import { api, apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
 
 // ─── Schemas (mirror backend DTOs) ──────────────────────────────────────────
 
@@ -98,10 +92,27 @@ interface CompetenceResp {
 type ResumeStatus = 'uploaded' | 'extracting' | 'ready' | 'failed'
 
 interface ExtractedResume {
+  name?: string | null
+  title?: string | null
+  email?: string | null
+  phone?: string | null
+  location?: string | null
+  links?: string[]
   summary?: string
   skills?: string[]
-  experiences?: { title?: string; company?: string; years?: number | string; description?: string }[]
-  education?: string[]
+  experiences?: {
+    title?: string
+    company?: string
+    location?: string
+    startDate?: string
+    endDate?: string
+    years?: number | string
+    description?: string
+  }[]
+  education?: { degree?: string; institution?: string; field?: string; year?: number | string }[]
+  certifications?: string[]
+  languages?: string[]
+  projects?: { name?: string; description?: string; technologies?: string[] }[]
   yearsOfExperience?: number | null
 }
 
@@ -406,8 +417,10 @@ export function ProfileTab({ role }: Props) {
   }
 
   // ─── Skill helpers ────────────────────────────────────────────────────────
-  async function addSkill() {
-    const nom = newSkillNom.trim()
+  // `nomArg` lets resume suggestions add a skill directly; `source` records
+  // whether it was typed manually or accepted from the parsed resume.
+  async function addSkill(nomArg?: string, source: 'manual' | 'resume' = 'manual') {
+    const nom = (nomArg ?? newSkillNom).trim()
     if (!nom || skills.some((s) => s.nom.toLowerCase() === nom.toLowerCase())) return
 
     try {
@@ -426,6 +439,7 @@ export function ProfileTab({ role }: Props) {
         freelanceId: user!.freelanceProfile!.id,
         competenceId,
         niveau: newSkillNiveau,
+        source,
       })
 
       setSkills((prev) => [...prev, {
@@ -434,7 +448,7 @@ export function ProfileTab({ role }: Props) {
         niveau: fc.niveau,
         competenceId: fc.competenceId,
       }])
-      setNewSkillNom('')
+      if (!nomArg) setNewSkillNom('')
     } catch {
       // silent — could add inline error if needed
     }
@@ -457,6 +471,19 @@ export function ProfileTab({ role }: Props) {
       // silent
     }
   }
+
+  // Skills parsed from READY resumes that the freelancer hasn't added yet —
+  // offered as one-tap suggestions rather than a second, parallel skill list.
+  const existingSkillNames = new Set(skills.map((s) => s.nom.toLowerCase()))
+  const resumeSuggestions = Array.from(
+    new Set(
+      resumes
+        .filter((r) => r.status === 'ready')
+        .flatMap((r) => r.extracted?.skills ?? [])
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ).filter((s) => !existingSkillNames.has(s.toLowerCase()))
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-10">
@@ -789,6 +816,27 @@ export function ProfileTab({ role }: Props) {
                   )}
                 </div>
 
+                {/* Suggested from the parsed resume */}
+                {resumeSuggestions.length > 0 && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+                    <p className="text-xs font-medium text-foreground">
+                      Found in your resume — tap to add
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {resumeSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => addSkill(s, 'resume')}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-primary/40 bg-white text-primary hover:bg-primary hover:text-white transition-colors"
+                        >
+                          <Plus className="w-3 h-3" /> {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Add skill input */}
                 <div className="flex flex-col gap-3 pt-3 border-t border-border">
                   <Label>Add a skill</Label>
@@ -816,7 +864,7 @@ export function ProfileTab({ role }: Props) {
                         <option key={n.value} value={n.value}>{n.label}</option>
                       ))}
                     </Select>
-                    <Button type="button" size="default" variant="outline" onClick={addSkill}>
+                    <Button type="button" size="default" variant="outline" onClick={() => addSkill()}>
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>

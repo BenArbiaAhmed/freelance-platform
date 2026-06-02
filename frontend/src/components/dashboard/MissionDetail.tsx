@@ -14,7 +14,7 @@ import { useFreelancersStore } from '@/store/freelancers'
 import { useAuthStore } from '@/store/auth'
 import { MatchedFreelancers } from '@/components/dashboard/MatchedFreelancers'
 import { useCandidaturesStore } from '@/store/candidatures'
-import { api, apiErrorMessage } from '@/lib/api'
+import { api, apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const applySchema = z.object({
@@ -133,11 +133,17 @@ export function MissionDetail({ missionId, onBack }: Props) {
 
               {/* Client row */}
               <div className="flex items-center gap-3">
-                <img
-                  src={mission.client.photo ?? `https://i.pravatar.cc/40?u=${mission.client.nom}`}
-                  alt={mission.client.nom}
-                  className="w-9 h-9 rounded-full object-cover border border-border"
-                />
+                {resolvePhotoUrl(mission.client.photo) ? (
+                  <img
+                    src={resolvePhotoUrl(mission.client.photo)!}
+                    alt={mission.client.nom}
+                    className="w-9 h-9 rounded-full object-cover border border-border"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full border border-border bg-secondary flex items-center justify-center shrink-0">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-foreground">{mission.client.nom}</p>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -234,8 +240,8 @@ export function MissionDetail({ missionId, onBack }: Props) {
                 {applicants.map((f) => (
                   <li key={f.id} className="flex items-center gap-3 px-6 py-4">
                     <div className="relative shrink-0">
-                      {f.photo ? (
-                        <img src={f.photo} alt={f.nom} className="w-9 h-9 rounded-full object-cover border border-border" />
+                      {resolvePhotoUrl(f.photo) ? (
+                        <img src={resolvePhotoUrl(f.photo)!} alt={f.nom} className="w-9 h-9 rounded-full object-cover border border-border" />
                       ) : (
                         <div className="w-9 h-9 rounded-full border border-border bg-secondary flex items-center justify-center">
                           <User className="w-4.5 h-4.5 text-muted-foreground" />

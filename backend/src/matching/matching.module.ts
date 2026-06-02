@@ -8,12 +8,14 @@ import { MatchingController } from './matching.controller';
 import { EmbeddingService } from './embedding.service';
 import { QdrantService } from './qdrant.service';
 import { ExtractionService } from './extraction/extraction.service';
-import { OllamaExtractionService } from './extraction/ollama-extraction.service';
+import { GroqExtractionService } from './extraction/groq-extraction.service';
+import { LlamaCloudParseService } from './parsing/llama-cloud-parse.service';
 
 /**
- * Global AI infrastructure: a single embedding model, a single Qdrant client
- * and the resume extractor are shared across the Missions and Resumes modules
- * (which inject them without importing this module).
+ * Global AI infrastructure: a single embedding model, a single Qdrant client,
+ * the document parser (LlamaCloud) and the resume extractor (Groq) are shared
+ * across the Missions and Resumes modules (which inject them without importing
+ * this module).
  */
 @Global()
 @Module({
@@ -22,9 +24,15 @@ import { OllamaExtractionService } from './extraction/ollama-extraction.service'
   providers: [
     EmbeddingService,
     QdrantService,
-    { provide: ExtractionService, useClass: OllamaExtractionService },
+    LlamaCloudParseService,
+    { provide: ExtractionService, useClass: GroqExtractionService },
     MatchingService,
   ],
-  exports: [EmbeddingService, QdrantService, ExtractionService],
+  exports: [
+    EmbeddingService,
+    QdrantService,
+    LlamaCloudParseService,
+    ExtractionService,
+  ],
 })
 export class MatchingModule {}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, ArrowRight, Search, Plus } from 'lucide-react'
+import { Calendar, Users, ArrowRight, Search, Plus, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import {
   type SortDirection,
 } from '@/store/missions'
 import { cn } from '@/lib/utils'
+import { resolvePhotoUrl } from '@/lib/api'
 
 interface Props {
   selectedId: string | null
@@ -169,11 +170,17 @@ function MissionCard({ mission: m, onSelect }: { mission: Mission; onSelect: (id
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <img
-              src={m.client.photo ?? `https://i.pravatar.cc/36?u=${m.client.nom}`}
-              alt={m.client.nom}
-              className="w-9 h-9 rounded-full object-cover border border-border"
-            />
+            {resolvePhotoUrl(m.client.photo) ? (
+              <img
+                src={resolvePhotoUrl(m.client.photo)!}
+                alt={m.client.nom}
+                className="w-9 h-9 rounded-full object-cover border border-border"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full border border-border bg-secondary flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
             <div>
               <p className="text-sm font-semibold text-foreground line-clamp-1">{m.titre}</p>
               <p className="text-xs text-muted-foreground">{m.client.entreprise}</p>

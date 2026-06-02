@@ -1,9 +1,13 @@
 # Infrastructure for local development.
 # - postgres: app database.
 # - qdrant:   vector DB for resume <-> mission matching.
-# - ollama:   LLM that parses resumes into structured sections. Optional — if it
-#             isn't running (or no model is pulled) the backend falls back to
-#             heuristic keyword extraction. Pull a model once it's up:
+# - ollama:   self-hosted LLM extractor, kept as a local alternative. By default
+#             the backend now parses PDFs with LlamaCloud and extracts structured
+#             CVs with Groq (see backend/.env.example); set GROQ_API_KEY /
+#             LLAMA_CLOUD_API_KEY to enable those. Without any of these the
+#             backend falls back to heuristic keyword extraction. To use Ollama
+#             instead, rebind ExtractionService in matching.module.ts and pull a
+#             model once it's up:
 #               docker compose exec ollama ollama pull qwen2.5:3b
 # Text embeddings are generated in-process by the backend (fastembed), so no
 # separate embedding service is needed.

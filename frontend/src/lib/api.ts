@@ -49,6 +49,13 @@ export function apiErrorMessage(
   return fallback;
 }
 
+/** Resolves a stored photo path (relative or absolute) to a full URL. */
+export function resolvePhotoUrl(url?: string | null): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${API_ORIGIN}${url}`
+}
+
 /** Minimal GraphQL client that posts to the Nest Apollo endpoint. */
 export async function graphqlRequest<T>(
   query: string,

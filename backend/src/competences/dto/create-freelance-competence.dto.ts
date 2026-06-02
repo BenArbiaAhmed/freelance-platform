@@ -1,5 +1,8 @@
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
-import { NiveauCompetence } from '../entities/freelance-competence.entity';
+import {
+  NiveauCompetence,
+  SkillSource,
+} from '../entities/freelance-competence.entity';
 
 export class CreateFreelanceCompetenceDto {
   @IsUUID()
@@ -11,4 +14,8 @@ export class CreateFreelanceCompetenceDto {
   @IsOptional()
   @IsEnum(NiveauCompetence)
   niveau?: NiveauCompetence;
+
+  @IsOptional()
+  @IsEnum(SkillSource)
+  source?: SkillSource;
 }

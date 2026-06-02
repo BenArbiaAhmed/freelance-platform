@@ -1,4 +1,5 @@
 import { Mission } from '../missions/entities/mission.entity';
+import { FreelanceProfile } from '../users/entities/freelance-profile.entity';
 import { ExtractedResume } from './extraction/extraction.service';
 
 /** Lowercase + de-dupe a list of skill strings. */
@@ -24,6 +25,32 @@ export function resumeSkills(extracted?: ExtractedResume | null): string[] {
   return normalizeSkills(extracted?.skills ?? []);
 }
 
+/** A freelancer's manually-entered (form) competence names, lowercased. */
+export function profileCompetenceSkills(
+  profile?: FreelanceProfile | null,
+): string[] {
+  return normalizeSkills(
+    (profile?.competences ?? [])
+      .map((fc) => fc.competence?.nom)
+      .filter((nom): nom is string => Boolean(nom)),
+  );
+}
+
+/**
+ * A freelancer's effective skill set = the union of their form competences and
+ * the skills parsed from their resume (both normalised/de-duped). This is what
+ * matching scores against, so neither source is silently ignored.
+ */
+export function freelanceSkills(
+  profile?: FreelanceProfile | null,
+  extracted?: ExtractedResume | null,
+): string[] {
+  return normalizeSkills([
+    ...profileCompetenceSkills(profile),
+    ...resumeSkills(extracted),
+  ]);
+}
+
 /** Text fed to the embedder for a mission — all structured sections. */
 export function buildMissionText(mission: Mission): string {
   const skills = missionSkills(mission);
@@ -46,21 +73,52 @@ export function buildMissionText(mission: Mission): string {
 /** Text fed to the embedder for a resume — built from the extracted JSON. */
 export function buildResumeText(extracted?: ExtractedResume | null): string {
   if (!extracted) return '';
+
   const experiences = (extracted.experiences ?? [])
     .map((exp) => {
       const head = [exp.title, exp.company].filter(Boolean).join(' at ');
-      const years = exp.years ? ` (${exp.years})` : '';
+      const span = [exp.startDate, exp.endDate].filter(Boolean).join(' - ');
+      const when = span || (exp.years ? String(exp.years) : '');
+      const meta = [exp.location, when].filter(Boolean).join(', ');
       const desc = exp.description ? `: ${exp.description}` : '';
-      return `${head}${years}${desc}`.trim();
+      return `${head}${meta ? ` (${meta})` : ''}${desc}`.trim();
+    })
+    .filter(Boolean);
+
+  // Education entries may be legacy plain strings on rows parsed before the
+  // schema was expanded — handle both shapes.
+  const education = (extracted.education ?? [])
+    .map((edu) => {
+      if (typeof edu === 'string') return edu;
+      const head = [edu.degree, edu.field].filter(Boolean).join(' in ');
+      const inst = edu.institution ? ` — ${edu.institution}` : '';
+      const year = edu.year ? ` (${edu.year})` : '';
+      return `${head}${inst}${year}`.trim();
+    })
+    .filter(Boolean);
+
+  const projects = (extracted.projects ?? [])
+    .map((project) => {
+      const tech = project.technologies?.length
+        ? ` [${project.technologies.join(', ')}]`
+        : '';
+      const desc = project.description ? `: ${project.description}` : '';
+      return `${project.name ?? ''}${desc}${tech}`.trim();
     })
     .filter(Boolean);
 
   return [
+    extracted.title ?? '',
     extracted.summary ?? '',
     extracted.skills?.length ? `Skills: ${extracted.skills.join(', ')}` : '',
     experiences.length ? `Experience:\n${experiences.join('\n')}` : '',
-    extracted.education?.length
-      ? `Education: ${extracted.education.join(', ')}`
+    education.length ? `Education: ${education.join('; ')}` : '',
+    projects.length ? `Projects:\n${projects.join('\n')}` : '',
+    extracted.certifications?.length
+      ? `Certifications: ${extracted.certifications.join(', ')}`
+      : '',
+    extracted.languages?.length
+      ? `Languages: ${extracted.languages.join(', ')}`
       : '',
     extracted.yearsOfExperience
       ? `${extracted.yearsOfExperience} years of experience`

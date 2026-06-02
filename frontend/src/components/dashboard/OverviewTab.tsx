@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { useCandidaturesStore } from '@/store/candidatures'
 import { useContratsStore } from '@/store/contrats'
 import type { DashTab } from '@/components/dashboard/Sidebar'
+import { resolvePhotoUrl } from '@/lib/api'
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
@@ -159,8 +160,8 @@ export function OverviewTab({ role, onNavigate, onSelectMission }: Props) {
                   ))
                 : received.slice(0, 5).map((a) => (
                     <li key={a.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/40 transition-colors">
-                      {a.freelance.photo ? (
-                        <img src={a.freelance.photo} alt={a.freelance.nom} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                      {resolvePhotoUrl(a.freelance.photo) ? (
+                        <img src={resolvePhotoUrl(a.freelance.photo)!} alt={a.freelance.nom} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
                       ) : (
                         <div className="w-8 h-8 rounded-full border border-border bg-secondary flex items-center justify-center shrink-0">
                           <User className="w-4 h-4 text-muted-foreground" />

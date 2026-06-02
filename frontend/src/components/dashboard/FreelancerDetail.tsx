@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useFreelancersStore } from '@/store/freelancers'
 import { useMissionsStore } from '@/store/missions'
 import { cn } from '@/lib/utils'
+import { resolvePhotoUrl } from '@/lib/api'
 
 const niveauConfig: Record<string, { label: string; width: string; color: string }> = {
   Expert:   { label: 'Expert',   width: 'w-full',    color: 'bg-violet-500' },
@@ -51,9 +52,9 @@ export function FreelancerDetail({ freelancerId, onBack }: Props) {
               {/* Avatar + name */}
               <div className="flex items-start gap-5">
                 <div className="relative shrink-0">
-                  {freelancer.photo ? (
+                  {resolvePhotoUrl(freelancer.photo) ? (
                     <img
-                      src={freelancer.photo}
+                      src={resolvePhotoUrl(freelancer.photo)!}
                       alt={freelancer.nom}
                       className="w-20 h-20 rounded-2xl object-cover border border-border shadow-sm"
                     />

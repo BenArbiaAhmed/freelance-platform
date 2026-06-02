@@ -54,6 +54,16 @@ export class ContratsService {
     return this.repo.save(entity);
   }
 
+  async setCahierDesCharges(
+    id: string,
+    file: Express.Multer.File,
+  ): Promise<Contrat> {
+    const entity = await this.findOne(id);
+    entity.cahierDesChargesUrl = `/uploads/cahiers/${file.filename}`;
+    entity.cahierDesChargesNom = file.originalname;
+    return this.repo.save(entity);
+  }
+
   async remove(id: string): Promise<void> {
     const result = await this.repo.delete(id);
     if (!result.affected) throw new NotFoundException(`Contrat ${id} not found`);

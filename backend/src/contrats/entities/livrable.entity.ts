@@ -29,8 +29,13 @@ export class Livrable {
   @Column()
   titre: string;
 
+  /** Path to the uploaded deliverable file (served under /uploads). */
   @Column()
   url: string;
+
+  /** Original filename of the uploaded deliverable. */
+  @Column({ type: 'text', nullable: true })
+  fileName?: string;
 
   @Column({ type: 'enum', enum: LivrableStatut, default: LivrableStatut.PENDING })
   statut: LivrableStatut;

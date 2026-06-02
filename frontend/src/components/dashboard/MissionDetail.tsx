@@ -229,7 +229,10 @@ export function MissionDetail({ missionId, onBack }: Props) {
 
           {/* Client: AI-matched freelancers. Freelancer: recent applicants. */}
           {isClient ? (
-            <MatchedFreelancers missionId={missionId} />
+            <MatchedFreelancers
+              missionId={missionId}
+              requiredSkills={mission.competencesRequises}
+            />
           ) : (
           <Card>
             <CardContent className="p-0">

@@ -62,6 +62,11 @@ export class CandidaturesController {
     return this.service.observeStatusChanges();
   }
 
+  @Get(':id/resume')
+  getFreelanceResume(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.service.getFreelanceResume(id);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   remove(@Param('id', new ParseUUIDPipe()) id: string) {

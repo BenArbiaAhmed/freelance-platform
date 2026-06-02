@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/store/auth'
-import { api, apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
+import { api, apiErrorMessage, resolvePhotoUrl, API_ORIGIN } from '@/lib/api'
 
 // ─── Schemas (mirror backend DTOs) ──────────────────────────────────────────
 

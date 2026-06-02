@@ -68,6 +68,14 @@ export class Contrat {
   @Column({ default: false })
   signéParFreelance: boolean;
 
+  /** Path to the client-uploaded specification document (cahier des charges). */
+  @Column({ type: 'text', nullable: true })
+  cahierDesChargesUrl?: string | null;
+
+  /** Original filename of the uploaded specification document. */
+  @Column({ type: 'text', nullable: true })
+  cahierDesChargesNom?: string | null;
+
   @CreateDateColumn()
   dateCreation: Date;
 

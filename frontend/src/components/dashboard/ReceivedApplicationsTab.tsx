@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, X, Star, ChevronDown, ExternalLink, Briefcase, User } from 'lucide-react'
+import { Check, X, Star, ChevronDown, ExternalLink, Briefcase, User, Download } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth'
 import { useCandidaturesStore, type ReceivedApplication } from '@/store/candidatures'
 import { cn } from '@/lib/utils'
-import { resolvePhotoUrl } from '@/lib/api'
+import { api, apiErrorMessage, resolvePhotoUrl, API_ORIGIN } from '@/lib/api'
 
 const statusStyle: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -120,9 +120,34 @@ function ApplicantRow({
   onViewFreelancer: (freelanceId: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [downloadingCv, setDownloadingCv] = useState(false)
+  const [cvError, setCvError] = useState<string | null>(null)
   const { acceptApplication, rejectApplication, actingOn } = useCandidaturesStore()
   const busy = actingOn === app.id
   const f = app.freelance
+
+  async function handleDownloadCv() {
+    setDownloadingCv(true)
+    setCvError(null)
+    try {
+      const { data } = await api.get<{ fileUrl: string; fileName: string }>(
+        `/candidatures/${app.id}/resume`,
+      )
+      const url = data.fileUrl.startsWith('http') ? data.fileUrl : `${API_ORIGIN}${data.fileUrl}`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = data.fileName
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (err) {
+      setCvError(apiErrorMessage(err, 'CV not available'))
+    } finally {
+      setDownloadingCv(false)
+    }
+  }
 
   return (
     <li className="px-5 py-4 flex flex-col gap-3">
@@ -179,6 +204,7 @@ function ApplicantRow({
       )}
 
       {/* Actions */}
+      <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant="outline"
@@ -187,6 +213,17 @@ function ApplicantRow({
           onClick={() => onViewFreelancer(f.id)}
         >
           View profile <ExternalLink className="w-3.5 h-3.5" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={downloadingCv}
+          onClick={handleDownloadCv}
+        >
+          <Download className="w-3.5 h-3.5" />
+          {downloadingCv ? 'Fetching…' : 'Download CV'}
         </Button>
 
         {app.statut === 'pending' && (
@@ -216,6 +253,10 @@ function ApplicantRow({
         {app.statut === 'accepted' && (
           <span className="text-xs text-emerald-700 font-medium">Contract created — see Contracts tab</span>
         )}
+      </div>
+      {cvError && (
+        <p className="text-xs text-destructive">{cvError}</p>
+      )}
       </div>
     </li>
   )

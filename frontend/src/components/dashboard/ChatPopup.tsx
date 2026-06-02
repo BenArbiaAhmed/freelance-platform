@@ -5,6 +5,7 @@ import { io, type Socket } from 'socket.io-client'
 import { api } from '@/lib/api'
 import { useContratsStore } from '@/store/contrats'
 import { useAuthStore } from '@/store/auth'
+import { useChatUiStore } from '@/store/chatUi'
 
 // Shapes mirror backend Message entity (contenu, expediteur, lu, dateEnvoi)
 interface ChatMessage {
@@ -33,7 +34,7 @@ interface BackendMessage {
 }
 
 export function ChatPopup() {
-  const [open, setOpen] = useState(false)
+  const { open, pendingContratId, toggle, close, consumePending } = useChatUiStore()
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [messagesByContract, setMessagesByContract] = useState<Record<string, ChatMessage[]>>({})
@@ -127,11 +128,11 @@ export function ChatPopup() {
   // Close on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node)) close()
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
-  }, [])
+  }, [close])
 
   function sendMessage(convId: string) {
     const text = (drafts[convId] ?? '').trim()
@@ -139,6 +140,15 @@ export function ChatPopup() {
     socketRef.current?.emit('send', { contratId: convId, expediteurId: userId, contenu: text })
     setDrafts((d) => ({ ...d, [convId]: '' }))
   }
+
+  // An external request (e.g. from the contract page) to open a conversation.
+  useEffect(() => {
+    if (pendingContratId) {
+      void openConversation(pendingContratId)
+      consumePending()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingContratId])
 
   async function openConversation(id: string) {
     setActiveConvId(id)
@@ -250,7 +260,7 @@ export function ChatPopup() {
             <>
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <h2 className="text-sm font-semibold text-foreground">Messages</h2>
-                <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button onClick={() => close()} className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -300,7 +310,7 @@ export function ChatPopup() {
 
       {/* FAB */}
       <button
-        onClick={() => { setOpen((v) => !v); setActiveConvId(null) }}
+        onClick={() => { toggle(); setActiveConvId(null) }}
         className="flex items-center justify-center w-13 h-13 w-12 h-12 rounded-2xl bg-primary text-white shadow-lg shadow-primary/30 hover:opacity-90 active:scale-95 transition-all relative"
         aria-label="Open chat"
       >

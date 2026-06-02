@@ -22,6 +22,8 @@ export interface MatchedMission {
   matchScore: number;
   /** Resume↔mission skill overlap (0–1), for transparency in the UI. */
   skillOverlap: number;
+  /** The freelancer's effective skill set used for scoring (form ∪ resume). */
+  freelanceSkills: string[];
 }
 
 export interface MatchedFreelanceCompetence {

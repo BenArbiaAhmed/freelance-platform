@@ -2,8 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Livrable } from './entities/livrable.entity';
-import { CreateLivrableDto } from './dto/create-livrable.dto';
 import { UpdateLivrableDto } from './dto/update-livrable.dto';
+
+interface CreateLivrableInput {
+  contratId: string;
+  titre: string;
+  url: string;
+  fileName: string;
+}
 
 @Injectable()
 export class LivrablesService {
@@ -11,12 +17,15 @@ export class LivrablesService {
     @InjectRepository(Livrable) private readonly repo: Repository<Livrable>,
   ) {}
 
-  create(dto: CreateLivrableDto): Promise<Livrable> {
-    return this.repo.save(this.repo.create(dto));
+  create(input: CreateLivrableInput): Promise<Livrable> {
+    return this.repo.save(this.repo.create(input));
   }
 
-  findAll(): Promise<Livrable[]> {
-    return this.repo.find();
+  findAll(contratId?: string): Promise<Livrable[]> {
+    return this.repo.find({
+      where: contratId ? { contratId } : {},
+      order: { dateDepot: 'DESC' },
+    });
   }
 
   async findOne(id: string): Promise<Livrable> {

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   getRecommendedMissions,
-  matchPercent,
   type MatchedMission,
 } from '@/lib/matching'
 import { apiErrorMessage } from '@/lib/api'
+import { MatchScoreBadge } from '@/components/dashboard/MatchScoreBadge'
 import { AxiosError } from 'axios'
 
 interface Props {
@@ -126,9 +126,11 @@ export function RecommendedMissions({ onSelect }: Props) {
                         'Unknown client'}
                     </p>
                   </div>
-                  <Badge variant="success" className="shrink-0">
-                    {matchPercent(m.matchScore)}% match
-                  </Badge>
+                  <MatchScoreBadge
+                    score={m.matchScore}
+                    requiredSkills={[...m.competencesRequises, ...m.requiredSkills]}
+                    candidateSkills={m.freelanceSkills}
+                  />
                 </div>
 
                 <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">

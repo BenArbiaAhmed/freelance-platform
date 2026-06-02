@@ -21,6 +21,7 @@ export interface MatchedMission {
   } | null
   matchScore: number
   skillOverlap: number
+  freelanceSkills: string[]
 }
 
 export interface MatchedFreelance {
@@ -55,4 +56,21 @@ export async function getMatchedFreelancers(
 /** Turns a cosine score (roughly 0–1) into a 0–100 percentage for display. */
 export function matchPercent(score: number): number {
   return Math.round(Math.max(0, Math.min(1, score)) * 100)
+}
+
+export function matchLabel(score: number): string {
+  const pct = matchPercent(score)
+  if (pct >= 75) return 'Strong match'
+  if (pct >= 55) return 'Good match'
+  if (pct >= 35) return 'Fair match'
+  return 'Partial match'
+}
+
+/** Tailwind classes for coloring a match badge by score tier. */
+export function matchColors(score: number): { badge: string; dot: string } {
+  const pct = matchPercent(score)
+  if (pct >= 75) return { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' }
+  if (pct >= 55) return { badge: 'bg-sky-50 text-sky-700 border-sky-200', dot: 'bg-sky-500' }
+  if (pct >= 35) return { badge: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-400' }
+  return { badge: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' }
 }

@@ -94,7 +94,7 @@ export class MatchingService {
         const skills = missionSkills(mission);
         const overlap = skillJaccard(mySkills, skills);
         const score = hybridScore(hit.score ?? 0, mySkills, skills);
-        return this.mapMission(mission, score, overlap);
+        return this.mapMission(mission, score, overlap, mySkills);
       })
       .filter((item): item is MatchedMission => item !== null)
       .sort((a, b) => b.matchScore - a.matchScore);
@@ -209,6 +209,7 @@ export class MatchingService {
     mission: Mission,
     matchScore: number,
     skillOverlap: number,
+    freelanceSkillList: string[] = [],
   ): MatchedMission {
     return {
       id: mission.id,
@@ -237,6 +238,7 @@ export class MatchingService {
         : null,
       matchScore,
       skillOverlap,
+      freelanceSkills: freelanceSkillList,
     };
   }
 

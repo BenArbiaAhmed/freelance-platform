@@ -1,15 +1,15 @@
-import { useEffect } from 'react'
-import { FileSignature, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { FileSignature, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth'
 import { useContratsStore } from '@/store/contrats'
+import { ContractDetail } from '@/components/dashboard/ContractDetail'
 import { cn } from '@/lib/utils'
 
 type ContratStatut = 'draft' | 'signed' | 'completed' | 'cancelled'
 
 const statusConfig: Record<ContratStatut, { label: string; icon: React.ElementType; className: string }> = {
-  draft: { label: 'Awaiting signature', icon: Clock, className: 'bg-gray-100 text-gray-500' },
+  draft: { label: 'In progress', icon: Clock, className: 'bg-sky-50 text-sky-700' },
   signed: { label: 'Active', icon: FileSignature, className: 'bg-sky-50 text-sky-700' },
   completed: { label: 'Completed', icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-700' },
   cancelled: { label: 'Cancelled', icon: XCircle, className: 'bg-red-50 text-red-600' },
@@ -23,13 +23,31 @@ export function ContractsTab({ role }: Props) {
   const clientId = useAuthStore((s) => s.user?.clientProfile?.id)
   const freelanceId = useAuthStore((s) => s.user?.freelanceProfile?.id)
   const { contrats, loading, error, fetchContrats } = useContratsStore()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const profileId = role === 'client' ? clientId : freelanceId
+
+  const refresh = () => {
+    if (!profileId) return
+    fetchContrats(role === 'client' ? { clientId: profileId } : { freelanceId: profileId })
+  }
 
   useEffect(() => {
     if (!profileId) return
     fetchContrats(role === 'client' ? { clientId: profileId } : { freelanceId: profileId })
   }, [role, profileId, fetchContrats])
+
+  const selected = selectedId ? contrats.find((c) => c.id === selectedId) : null
+  if (selected) {
+    return (
+      <ContractDetail
+        contract={selected}
+        role={role}
+        onBack={() => setSelectedId(null)}
+        onChanged={refresh}
+      />
+    )
+  }
 
   if (!profileId) {
     return (
@@ -72,7 +90,11 @@ export function ContractsTab({ role }: Props) {
                 : `${c.clientNom}${c.clientEntreprise ? ` · ${c.clientEntreprise}` : ''}`
 
             return (
-              <Card key={c.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={c.id}
+                className="hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                onClick={() => setSelectedId(c.id)}
+              >
                 <CardContent className="p-5">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     {/* Status icon */}
@@ -105,9 +127,7 @@ export function ContractsTab({ role }: Props) {
                       <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', cfg.className)}>
                         {cfg.label}
                       </span>
-                      {c.statut === 'signed' && (
-                        <Button size="sm" variant="outline">Open chat</Button>
-                      )}
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </div>
                 </CardContent>

@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Sparkles, User } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   getMatchedFreelancers,
-  matchPercent,
   type MatchedFreelance,
 } from '@/lib/matching'
 import { apiErrorMessage, resolvePhotoUrl } from '@/lib/api'
+import { MatchScoreBadge } from '@/components/dashboard/MatchScoreBadge'
 
 interface Props {
   missionId: string
+  requiredSkills?: string[]
 }
 
 /** Client-only panel: freelancers ranked by AI match to this mission. */
-export function MatchedFreelancers({ missionId }: Props) {
+export function MatchedFreelancers({ missionId, requiredSkills = [] }: Props) {
   const [freelancers, setFreelancers] = useState<MatchedFreelance[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -104,9 +104,14 @@ export function MatchedFreelancers({ missionId }: Props) {
                   ) : null}
                   <p className="text-xs text-amber-600">★ {f.rating}</p>
                 </div>
-                <Badge variant="success" className="shrink-0">
-                  {matchPercent(f.matchScore)}% match
-                </Badge>
+                <MatchScoreBadge
+                  score={f.matchScore}
+                  requiredSkills={requiredSkills}
+                  candidateSkills={[
+                    ...f.competences.map((c) => c.competence.nom),
+                    ...f.resumeSkills,
+                  ]}
+                />
               </li>
             ))}
           </ul>

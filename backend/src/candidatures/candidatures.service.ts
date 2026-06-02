@@ -4,6 +4,7 @@ import { Observable, Subject } from 'rxjs';
 import { Repository } from 'typeorm';
 import { Candidature, CandidatureStatut } from './entities/candidature.entity';
 import { Contrat, ContratStatut } from '../contrats/entities/contrat.entity';
+import { Resume, ResumeStatus } from '../resumes/entities/resume.entity';
 import { CreateCandidatureDto } from './dto/create-candidature.dto';
 import { UpdateCandidatureDto } from './dto/update-candidature.dto';
 
@@ -16,6 +17,8 @@ export class CandidaturesService {
     private readonly repo: Repository<Candidature>,
     @InjectRepository(Contrat)
     private readonly contratRepo: Repository<Contrat>,
+    @InjectRepository(Resume)
+    private readonly resumeRepo: Repository<Resume>,
   ) {}
 
   observeStatusChanges(): Observable<MessageEvent> {
@@ -114,5 +117,18 @@ export class CandidaturesService {
     const result = await this.repo.delete(id);
     if (!result.affected)
       throw new NotFoundException(`Candidature ${id} not found`);
+  }
+
+  async getFreelanceResume(id: string): Promise<{ fileUrl: string; fileName: string }> {
+    const candidature = await this.repo.findOne({ where: { id } });
+    if (!candidature) throw new NotFoundException(`Candidature ${id} not found`);
+
+    const resume = await this.resumeRepo.findOne({
+      where: { freelanceProfileId: candidature.freelanceId, status: ResumeStatus.READY },
+      order: { createdAt: 'DESC' },
+    });
+    if (!resume) throw new NotFoundException('No processed resume found for this applicant');
+
+    return { fileUrl: resume.fileUrl, fileName: resume.fileName };
   }
 }

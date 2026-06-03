@@ -16,7 +16,7 @@ const testimonials = [
     avatar: 'https://i.pravatar.cc/56?img=12',
     stars: 5,
     quote:
-      'FreelanceHub pays on time, every time. The milestone escrow means I never chase invoices anymore. Best platform I\'ve used in 6 years.',
+      'Embark pays on time, every time. The milestone escrow means I never chase invoices anymore. Best platform I\'ve used in 6 years.',
   },
   {
     name: 'Maria Chen',
@@ -60,7 +60,7 @@ export function Testimonials() {
           <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Testimonials</p>
           <h2 className="text-4xl font-bold text-foreground">Loved by clients and freelancers</h2>
           <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-            Over 12,000 professionals trust FreelanceHub to power their work.
+            Over 12,000 professionals trust Embark to power their work.
           </p>
         </div>
 

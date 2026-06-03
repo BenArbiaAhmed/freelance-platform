@@ -531,7 +531,7 @@ export function ProfileTab({ role }: Props) {
       <div className="border-t border-border" />
 
       {/* ── Personal information ── */}
-      <Section title="Personal information" description="Your public identity on FreelanceHub. Visible to clients and freelancers.">
+      <Section title="Personal information" description="Your public identity on Embark. Visible to clients and freelancers.">
         <Card>
           <CardContent className="p-6">
             <form onSubmit={handlePersonal(onPersonalSubmit)} noValidate className="flex flex-col gap-5">

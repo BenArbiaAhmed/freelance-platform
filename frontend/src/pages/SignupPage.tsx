@@ -88,14 +88,14 @@ export default function SignupPage() {
           <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-white shadow-lg shadow-primary/30">
             <Zap className="w-5 h-5" />
           </span>
-          FreelanceHub
+          Embark
         </Link>
 
         {/* Card */}
         <div className="rounded-2xl border border-border bg-white/80 backdrop-blur-md shadow-xl shadow-black/5 p-8">
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
-            <p className="text-sm text-muted-foreground mt-1">Join 12,000+ professionals on FreelanceHub</p>
+            <p className="text-sm text-muted-foreground mt-1">Join 12,000+ professionals on Embark</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5">

@@ -29,7 +29,7 @@ export function Footer() {
             <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white">
               <Zap className="w-4 h-4" />
             </span>
-            FreelanceHub
+            Embark
           </a>
           <p className="text-sm text-muted-foreground leading-relaxed">
             The modern platform for freelance collaboration — built on REST, GraphQL, WebSocket, and SSE.
@@ -54,7 +54,7 @@ export function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} FreelanceHub. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Embark. All rights reserved.</p>
         <p>Made with care for the freelance community.</p>
       </div>
     </footer>

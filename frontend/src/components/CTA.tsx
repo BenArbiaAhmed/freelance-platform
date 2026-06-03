@@ -13,7 +13,7 @@ export function CTA() {
           Ready to build something great?
         </h2>
         <p className="text-white/70 mt-5 text-lg max-w-xl mx-auto">
-          Join thousands of companies and freelancers already collaborating on FreelanceHub.
+          Join thousands of companies and freelancers already collaborating on Embark.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-10">
           <Button

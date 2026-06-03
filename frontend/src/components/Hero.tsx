@@ -27,7 +27,7 @@ export function Hero() {
 
         {/* Subtitle */}
         <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-          FreelanceHub connects ambitious clients with elite freelancers across design,
+          Embark connects ambitious clients with elite freelancers across design,
           development, marketing and more — with real-time collaboration built in.
         </p>
 

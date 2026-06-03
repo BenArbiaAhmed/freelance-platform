@@ -57,7 +57,7 @@ export function Sidebar({ active, onNavigate, collapsed, onToggleCollapse, user 
         <Link to="/" className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white shrink-0">
           <Zap className="w-4 h-4" />
         </Link>
-        {!collapsed && <span className="font-bold text-base text-foreground truncate">FreelanceHub</span>}
+        {!collapsed && <span className="font-bold text-base text-foreground truncate">Embark</span>}
       </div>
 
       {/* Nav items */}

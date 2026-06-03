@@ -21,8 +21,8 @@ async function bootstrap() {
     }),
   );
   const config = new DocumentBuilder()
-    .setTitle('FreelanceHub API')
-    .setDescription('The API documentation for the FreelanceHub platform')
+    .setTitle('Embark API')
+    .setDescription('The API documentation for the Embark platform')
     .setVersion('1.0')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
